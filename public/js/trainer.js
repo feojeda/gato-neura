@@ -1,6 +1,6 @@
 import {
     createBoard, getValidMoves, makeMove,
-    checkWinner, isTerminal, invertBoard,
+    isTerminal, invertBoard,
     PLAYER_X, PLAYER_O
 } from './game.js';
 import { predict } from './model.js';
@@ -9,7 +9,7 @@ function maskInvalidMoves(policy, board) {
     const masked = new Array(9).fill(0);
     let sum = 0;
     for (let i = 0; i < 9; i++) {
-        if (board[i] === 0) {
+        if (board[i] === 0 && Number.isFinite(policy[i])) {
             masked[i] = Math.max(policy[i], 1e-8);
             sum += masked[i];
         }
@@ -74,6 +74,10 @@ async function playOneGame(model, temperature) {
 
 export async function trainLoop(model, config, callbacks) {
     const { numGames, batchSize, lr } = config;
+    if (!numGames || numGames <= 0) throw new Error('config.numGames must be > 0');
+    if (!batchSize || batchSize <= 0) throw new Error('config.batchSize must be > 0');
+    if (!lr || lr <= 0) throw new Error('config.lr must be > 0');
+
     const {
         onGameComplete,
         onTrainStep,
@@ -83,50 +87,46 @@ export async function trainLoop(model, config, callbacks) {
 
     const optimizer = tf.train.adam(lr);
     let totalGames = 0;
-    let totalWins = 0;
-
     const allExamples = [];
 
-    for (let g = 0; g < numGames; g++) {
-        if (shouldStop && shouldStop()) break;
+    try {
+        for (let g = 0; g < numGames; g++) {
+            if (shouldStop && shouldStop()) break;
 
-        const temperature = Math.max(0.1, 1.0 - (g / numGames) * 0.9);
-        const examples = await playOneGame(model, temperature);
-        allExamples.push(...examples);
-        totalGames++;
+            const temperature = Math.max(0.1, 1.0 - (g / numGames) * 0.9);
+            const examples = await playOneGame(model, temperature);
+            allExamples.push(...examples);
+            totalGames++;
 
-        const lastEx = examples[examples.length - 1];
-        if (lastEx.value > 0) totalWins++;
+            if (onGameComplete) {
+                onGameComplete({
+                    gamesPlayed: totalGames,
+                    totalGames: numGames
+                });
+            }
 
-        if (onGameComplete) {
-            onGameComplete({
-                gamesPlayed: totalGames,
-                totalGames: numGames,
-                winRate: totalWins / totalGames
-            });
+            if (allExamples.length >= batchSize) {
+                const batch = allExamples.splice(0, batchSize);
+                const { policyLoss, valueLoss } = await trainOnBatch(model, batch, optimizer);
+                if (onTrainStep) {
+                    onTrainStep({ policyLoss, valueLoss });
+                }
+            }
+
+            await tf.nextFrame();
         }
 
-        if (allExamples.length >= batchSize) {
-            const batch = allExamples.splice(0, batchSize);
-            const { policyLoss, valueLoss } = await trainOnBatch(model, batch, optimizer);
+        if (allExamples.length > 0) {
+            const { policyLoss, valueLoss } = await trainOnBatch(model, allExamples, optimizer);
             if (onTrainStep) {
                 onTrainStep({ policyLoss, valueLoss });
             }
         }
-
-        await tf.nextFrame();
+    } finally {
+        optimizer.dispose();
     }
 
-    if (allExamples.length > 0) {
-        const { policyLoss, valueLoss } = await trainOnBatch(model, allExamples, optimizer);
-        if (onTrainStep) {
-            onTrainStep({ policyLoss, valueLoss });
-        }
-    }
-
-    optimizer.dispose();
-
-    if (onComplete) onComplete({ totalGames, winRate: totalWins / totalGames });
+    if (onComplete) onComplete({ totalGames });
 }
 
 async function trainOnBatch(model, batch, optimizer) {
@@ -138,19 +138,24 @@ async function trainOnBatch(model, batch, optimizer) {
     const policyYs = tf.tensor2d(policyTargets);
     const valueYs = tf.tensor2d(valueTargets);
 
-    let policyLoss = 0;
-    let valueLoss = 0;
-
     await optimizer.minimize(() => {
         const [pPred, vPred] = model.apply(xs);
-        const pLoss = tf.losses.softmaxCrossEntropy(policyYs, pPred);
-        const vLoss = tf.metrics.meanSquaredError(valueYs, vPred);
-        const totalLoss = tf.add(pLoss, vLoss);
-        policyLoss = pLoss.dataSync()[0];
-        valueLoss = vLoss.dataSync()[0];
-        return totalLoss;
+        const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
+        const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+        return tf.add(pLoss, vLoss);
     });
 
+    // Compute losses for reporting (extra forward pass)
+    const [pPred, vPred] = model.apply(xs);
+    const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
+    const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+    const policyLoss = (await pLoss.data())[0];
+    const valueLoss = (await vLoss.data())[0];
+
+    pPred.dispose();
+    vPred.dispose();
+    pLoss.dispose();
+    vLoss.dispose();
     xs.dispose();
     policyYs.dispose();
     valueYs.dispose();
