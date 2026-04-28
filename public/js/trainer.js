@@ -146,31 +146,34 @@ async function trainOnBatch(model, batch, optimizer) {
     const policyYs = tf.tensor2d(policyTargets);
     const valueYs = tf.tensor2d(valueTargets);
 
-    optimizer.minimize(() => {
-        return tf.tidy(() => {
-            const [pPred, vPred] = model.apply(xs);
-            const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
-            const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
-            return tf.add(pLoss, vLoss);
+    try {
+        optimizer.minimize(() => {
+            return tf.tidy(() => {
+                const [pPred, vPred] = model.apply(xs);
+                const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
+                const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+                return tf.add(pLoss, vLoss);
+            });
         });
-    });
 
-    // Compute losses for reporting (extra forward pass)
-    const [pPred, vPred] = model.apply(xs);
-    const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
-    const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
-    const policyLoss = (await pLoss.data())[0];
-    const valueLoss = (await vLoss.data())[0];
+        // Compute losses for reporting (extra forward pass)
+        const [pPred, vPred] = model.apply(xs);
+        const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
+        const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+        const policyLoss = (await pLoss.data())[0];
+        const valueLoss = (await vLoss.data())[0];
 
-    pPred.dispose();
-    vPred.dispose();
-    pLoss.dispose();
-    vLoss.dispose();
-    xs.dispose();
-    policyYs.dispose();
-    valueYs.dispose();
+        pPred.dispose();
+        vPred.dispose();
+        pLoss.dispose();
+        vLoss.dispose();
 
-    return { policyLoss, valueLoss };
+        return { policyLoss, valueLoss };
+    } finally {
+        xs.dispose();
+        policyYs.dispose();
+        valueYs.dispose();
+    }
 }
 
 export function chooseBestMove(model, board) {

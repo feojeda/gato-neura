@@ -38,6 +38,7 @@ function setupUI() {
 }
 
 function refreshVisualization() {
+    if (state.isWaitingForNetwork) return;
     const layers = ui.getLayersConfig();
     model.disposeModel(state.model);
     state.model = model.createModel(layers);
@@ -111,6 +112,7 @@ async function handleCellClick(pos) {
 
 function endGame(term) {
     state.gameOver = true;
+    state.isPlayerTurn = true;
     if (term.winner === game.PLAYER_X) {
         state.scores.player++;
         ui.setTurnIndicator('Ganaste!');

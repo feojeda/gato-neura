@@ -27,7 +27,8 @@ export function renderBoard(board, winLine = null) {
 }
 
 export function setTurnIndicator(text) {
-    document.getElementById('turn-indicator').textContent = text;
+    const el = document.getElementById('turn-indicator');
+    if (el) el.textContent = text;
 }
 
 export function setConfidence(value) {
@@ -41,13 +42,17 @@ export function setConfidence(value) {
 }
 
 export function updateScoreboard(scores) {
-    document.getElementById('score-player').textContent = scores.player;
-    document.getElementById('score-draw').textContent = scores.draw;
-    document.getElementById('score-network').textContent = scores.network;
+    const playerEl = document.getElementById('score-player');
+    const drawEl = document.getElementById('score-draw');
+    const networkEl = document.getElementById('score-network');
+    if (playerEl) playerEl.textContent = scores.player;
+    if (drawEl) drawEl.textContent = scores.draw;
+    if (networkEl) networkEl.textContent = scores.network;
 }
 
 export function initLayersConfig(defaultLayers = [64, 32]) {
     const container = document.getElementById('layers-config');
+    if (!container) return;
     container.innerHTML = '';
     defaultLayers.forEach((neurons, i) => addLayerRow(container, i, neurons));
 }
@@ -84,8 +89,10 @@ export function setLayersConfigEditable(editable) {
 
 export function initAddLayerButton(onClick) {
     const btn = document.getElementById('btn-add-layer');
+    if (!btn) return;
     btn.addEventListener('click', () => {
         const container = document.getElementById('layers-config');
+        if (!container) return;
         const count = container.children.length;
         if (count >= 5) return;
         addLayerRow(container, count, 32);
@@ -94,9 +101,10 @@ export function initAddLayerButton(onClick) {
 }
 
 export function initRemoveLayerButtons(onClick) {
-    document.getElementById('layers-config').addEventListener('click', (e) => {
+    const container = document.getElementById('layers-config');
+    if (!container) return;
+    container.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-remove-layer')) {
-            const container = document.getElementById('layers-config');
             if (container.children.length <= 1) return;
             e.target.parentElement.remove();
             relabelLayers();
@@ -113,50 +121,70 @@ function relabelLayers() {
 }
 
 export function getTrainingConfig() {
+    const numGames = parseInt(document.getElementById('input-games')?.value, 10);
+    const lr = parseFloat(document.getElementById('input-lr')?.value);
+    const batchSize = parseInt(document.getElementById('input-batch')?.value, 10);
     return {
-        numGames: parseInt(document.getElementById('input-games').value, 10),
-        lr: parseFloat(document.getElementById('input-lr').value),
-        batchSize: parseInt(document.getElementById('input-batch').value, 10)
+        numGames: Number.isNaN(numGames) ? 500 : Math.max(1, numGames),
+        lr: Number.isNaN(lr) ? 0.001 : Math.max(1e-6, lr),
+        batchSize: Number.isNaN(batchSize) ? 64 : Math.max(1, batchSize)
     };
 }
 
 export function initGamesSlider() {
     const slider = document.getElementById('input-games');
     const display = document.getElementById('games-value');
+    if (!slider || !display) return;
     slider.addEventListener('input', () => {
         display.textContent = slider.value;
     });
 }
 
 export function setTrainingUI(isTraining) {
-    document.getElementById('btn-train').disabled = isTraining;
-    document.getElementById('btn-stop-train').disabled = !isTraining;
-    document.getElementById('btn-new-game').disabled = isTraining;
-    document.getElementById('btn-reset').disabled = isTraining;
+    const trainBtn = document.getElementById('btn-train');
+    const stopBtn = document.getElementById('btn-stop-train');
+    const newGameBtn = document.getElementById('btn-new-game');
+    const resetBtn = document.getElementById('btn-reset');
+    if (trainBtn) trainBtn.disabled = isTraining;
+    if (stopBtn) stopBtn.disabled = !isTraining;
+    if (newGameBtn) newGameBtn.disabled = isTraining;
+    if (resetBtn) resetBtn.disabled = isTraining;
     setLayersConfigEditable(!isTraining);
 }
 
 export function updateMetrics(data) {
     if (data.gamesPlayed !== undefined) {
-        document.getElementById('metric-games').textContent = `${data.gamesPlayed}/${data.totalGames}`;
-        const pct = (data.gamesPlayed / data.totalGames * 100).toFixed(0);
-        document.getElementById('train-progress').style.width = `${pct}%`;
+        const gamesEl = document.getElementById('metric-games');
+        const progressEl = document.getElementById('train-progress');
+        if (gamesEl) gamesEl.textContent = `${data.gamesPlayed}/${data.totalGames}`;
+        if (progressEl && data.totalGames > 0) {
+            const pct = (data.gamesPlayed / data.totalGames * 100).toFixed(0);
+            progressEl.style.width = `${pct}%`;
+        }
     }
     if (data.winRate !== undefined) {
-        document.getElementById('metric-winrate').textContent = (data.winRate * 100).toFixed(1) + '%';
+        const el = document.getElementById('metric-winrate');
+        if (el) el.textContent = (data.winRate * 100).toFixed(1) + '%';
     }
     if (data.policyLoss !== undefined) {
-        document.getElementById('metric-ploss').textContent = data.policyLoss.toFixed(4);
+        const el = document.getElementById('metric-ploss');
+        if (el) el.textContent = data.policyLoss.toFixed(4);
     }
     if (data.valueLoss !== undefined) {
-        document.getElementById('metric-vloss').textContent = data.valueLoss.toFixed(4);
+        const el = document.getElementById('metric-vloss');
+        if (el) el.textContent = data.valueLoss.toFixed(4);
     }
 }
 
 export function resetMetrics() {
-    document.getElementById('metric-games').textContent = '0/0';
-    document.getElementById('metric-winrate').textContent = '—';
-    document.getElementById('metric-ploss').textContent = '—';
-    document.getElementById('metric-vloss').textContent = '—';
-    document.getElementById('train-progress').style.width = '0%';
+    const gamesEl = document.getElementById('metric-games');
+    const winrateEl = document.getElementById('metric-winrate');
+    const plossEl = document.getElementById('metric-ploss');
+    const vlossEl = document.getElementById('metric-vloss');
+    const progressEl = document.getElementById('train-progress');
+    if (gamesEl) gamesEl.textContent = '0/0';
+    if (winrateEl) winrateEl.textContent = '—';
+    if (plossEl) plossEl.textContent = '—';
+    if (vlossEl) vlossEl.textContent = '—';
+    if (progressEl) progressEl.style.width = '0%';
 }
