@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gato Neura — Red Neuronal para Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Gato Neura</h1>
+        <p>Red neuronal estilo AlphaZero para Tic-Tac-Toe</p>
+    </header>
+    <main class="dashboard">
+        <section class="panel panel-model" id="panel-model">
+            <h2>Modelo</h2>
+            <div id="model-viz"></div>
+            <div id="heatmap-container"></div>
+            <div class="legend">
+                <span class="legend-neg">Negativo</span>
+                <span class="legend-zero">Cero</span>
+                <span class="legend-pos">Positivo</span>
+            </div>
+        </section>
+        <section class="panel panel-board" id="panel-board">
+            <h2>Tablero</h2>
+            <div class="game-info">
+                <span id="turn-indicator">Tu turno (X)</span>
+                <span id="confidence-display">Confianza: —</span>
+            </div>
+            <div class="board" id="board">
+                <div class="cell" data-pos="0"></div>
+                <div class="cell" data-pos="1"></div>
+                <div class="cell" data-pos="2"></div>
+                <div class="cell" data-pos="3"></div>
+                <div class="cell" data-pos="4"></div>
+                <div class="cell" data-pos="5"></div>
+                <div class="cell" data-pos="6"></div>
+                <div class="cell" data-pos="7"></div>
+                <div class="cell" data-pos="8"></div>
+            </div>
+            <div class="board-controls">
+                <button id="btn-new-game">Nueva Partida</button>
+                <button id="btn-reset">Reiniciar Todo</button>
+            </div>
+            <div class="scoreboard" id="scoreboard">
+                <span class="score score-player">Jugador: <strong id="score-player">0</strong></span>
+                <span class="score score-draw">Empates: <strong id="score-draw">0</strong></span>
+                <span class="score score-network">Red: <strong id="score-network">0</strong></span>
+            </div>
+        </section>
+        <section class="panel panel-controls" id="panel-controls">
+            <h2>Controles</h2>
+            <div class="config-section">
+                <h3>Arquitectura del Modelo</h3>
+                <div id="layers-config"></div>
+                <button id="btn-add-layer">+ Capa</button>
+            </div>
+            <div class="config-section">
+                <h3>Entrenamiento</h3>
+                <label>Partidas: <input type="range" id="input-games" min="100" max="5000" step="100" value="500"><span id="games-value">500</span></label>
+                <label>Learning Rate: <input type="number" id="input-lr" value="0.001" step="0.0001" min="0.0001" max="0.1"></label>
+                <label>Batch Size: <input type="number" id="input-batch" value="64" step="16" min="16" max="256"></label>
+            </div>
+            <div class="train-controls">
+                <button id="btn-train" class="btn-primary">Entrenar</button>
+                <button id="btn-stop-train" disabled>Detener</button>
+            </div>
+            <div class="metrics" id="metrics">
+                <h3>Métricas</h3>
+                <div class="progress-bar"><div class="progress-fill" id="train-progress"></div></div>
+                <div class="metric"><span>Partidas:</span> <span id="metric-games">0/0</span></div>
+                <div class="metric"><span>Win Rate:</span> <span id="metric-winrate">—</span></div>
+                <div class="metric"><span>Policy Loss:</span> <span id="metric-ploss">—</span></div>
+                <div class="metric"><span>Value Loss:</span> <span id="metric-vloss">—</span></div>
+            </div>
+        </section>
+    </main>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
