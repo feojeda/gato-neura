@@ -131,6 +131,8 @@ export function initGamesSlider() {
 export function setTrainingUI(isTraining) {
     document.getElementById('btn-train').disabled = isTraining;
     document.getElementById('btn-stop-train').disabled = !isTraining;
+    document.getElementById('btn-new-game').disabled = isTraining;
+    document.getElementById('btn-reset').disabled = isTraining;
     setLayersConfigEditable(!isTraining);
 }
 

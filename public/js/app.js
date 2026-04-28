@@ -3,6 +3,7 @@ import * as model from './model.js';
 import * as trainer from './trainer.js';
 import * as viz from './visualizer.js';
 import * as ui from './ui.js';
+import { WIN_LINES } from './game.js';
 
 const state = {
     board: game.createBoard(),
@@ -10,6 +11,7 @@ const state = {
     isTraining: false,
     shouldStop: false,
     isPlayerTurn: true,
+    isWaitingForNetwork: false,
     gameOver: false,
     scores: { player: 0, draw: 0, network: 0 }
 };
@@ -50,8 +52,13 @@ async function handleCellClick(pos) {
     if (!state.isPlayerTurn || state.gameOver || state.isTraining) return;
     if (state.board[pos] !== game.EMPTY) return;
 
+    state.isPlayerTurn = false;
+
     const next = game.makeMove(state.board, pos, game.PLAYER_X);
-    if (!next) return;
+    if (!next) {
+        state.isPlayerTurn = true;
+        return;
+    }
 
     state.board = next;
     ui.renderBoard(state.board);
@@ -62,26 +69,40 @@ async function handleCellClick(pos) {
         return;
     }
 
-    state.isPlayerTurn = false;
     ui.setTurnIndicator('Pensando...');
 
     await new Promise(r => setTimeout(r, 200));
 
     const boardForNetwork = state.board;
-    const { move, confidence } = await trainer.chooseBestMove(state.model, boardForNetwork);
+    state.isWaitingForNetwork = true;
 
-    state.board = game.makeMove(state.board, move, game.PLAYER_O);
-    ui.renderBoard(state.board);
-    ui.setConfidence(confidence);
+    try {
+        const { move } = await trainer.chooseBestMove(state.model, boardForNetwork);
+        if (!state.isWaitingForNetwork) return;
 
-    const term2 = game.isTerminal(state.board);
-    if (term2.over) {
-        endGame(term2);
-        return;
+        const { value } = await model.predict(state.model, boardForNetwork);
+        ui.setConfidence(value);
+
+        state.board = game.makeMove(state.board, move, game.PLAYER_O);
+        ui.renderBoard(state.board);
+
+        const term2 = game.isTerminal(state.board);
+        if (term2.over) {
+            endGame(term2);
+            return;
+        }
+
+        state.isPlayerTurn = true;
+        ui.setTurnIndicator('Tu turno (X)');
+    } catch (err) {
+        console.error('Network move error:', err);
+    } finally {
+        state.isWaitingForNetwork = false;
+        if (!state.gameOver && !state.isTraining) {
+            state.isPlayerTurn = true;
+            ui.setTurnIndicator('Tu turno (X)');
+        }
     }
-
-    state.isPlayerTurn = true;
-    ui.setTurnIndicator('Tu turno (X)');
 }
 
 function endGame(term) {
@@ -112,13 +133,8 @@ function endGame(term) {
 
 function getWinLine(winner) {
     if (winner === null) return null;
-    const lines = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
-    ];
-    for (const line of lines) {
-        const [a,b,c] = line;
+    for (const line of WIN_LINES) {
+        const [a, b, c] = line;
         if (state.board[a] !== game.EMPTY &&
             state.board[a] === state.board[b] &&
             state.board[a] === state.board[c]) {
@@ -129,15 +145,18 @@ function getWinLine(winner) {
 }
 
 function newGame() {
+    if (state.isTraining) return;
     state.board = game.createBoard();
     state.isPlayerTurn = true;
     state.gameOver = false;
+    state.isWaitingForNetwork = false;
     ui.renderBoard(state.board);
     ui.setTurnIndicator('Tu turno (X)');
     ui.setConfidence(null);
 }
 
 function resetAll() {
+    if (state.isTraining) return;
     newGame();
     state.scores = { player: 0, draw: 0, network: 0 };
     ui.updateScoreboard(state.scores);
@@ -156,33 +175,39 @@ async function startTraining() {
     model.disposeModel(state.model);
     state.model = model.createModel(layers);
 
-    await trainer.trainLoop(state.model, config, {
-        onGameComplete: (data) => {
-            ui.updateMetrics(data);
-            if (data.gamesPlayed % 50 === 0) {
+    try {
+        await trainer.trainLoop(state.model, config, {
+            onGameComplete: (data) => {
+                ui.updateMetrics(data);
+                if (data.gamesPlayed % 50 === 0) {
+                    viz.updateVisualization(
+                        document.getElementById('model-viz'),
+                        document.getElementById('heatmap-container'),
+                        state.model
+                    );
+                }
+            },
+            onTrainStep: (data) => {
+                ui.updateMetrics(data);
+            },
+            onComplete: (data) => {
+                state.isTraining = false;
+                ui.setTrainingUI(false);
+                ui.updateMetrics(data);
                 viz.updateVisualization(
                     document.getElementById('model-viz'),
                     document.getElementById('heatmap-container'),
                     state.model
                 );
-            }
-        },
-        onTrainStep: (data) => {
-            ui.updateMetrics(data);
-        },
-        onComplete: (data) => {
-            state.isTraining = false;
-            ui.setTrainingUI(false);
-            ui.updateMetrics(data);
-            viz.updateVisualization(
-                document.getElementById('model-viz'),
-                document.getElementById('heatmap-container'),
-                state.model
-            );
-            newGame();
-        },
-        shouldStop: () => state.shouldStop
-    });
+                newGame();
+            },
+            shouldStop: () => state.shouldStop
+        });
+    } catch (err) {
+        console.error('Training error:', err);
+        state.isTraining = false;
+        ui.setTrainingUI(false);
+    }
 
     if (state.shouldStop) {
         state.isTraining = false;
