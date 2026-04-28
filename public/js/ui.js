@@ -172,6 +172,8 @@ export function updateMetrics(data) {
         if (el) {
             if (Number.isNaN(data.policyLoss)) {
                 el.textContent = 'Error';
+            } else if (data.skipped) {
+                el.textContent = '—';
             } else {
                 el.textContent = data.policyLoss.toFixed(4);
             }
@@ -182,6 +184,8 @@ export function updateMetrics(data) {
         if (el) {
             if (Number.isNaN(data.valueLoss)) {
                 el.textContent = 'Error';
+            } else if (data.skipped) {
+                el.textContent = '—';
             } else {
                 el.textContent = data.valueLoss.toFixed(4);
             }

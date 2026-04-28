@@ -164,9 +164,9 @@ export async function trainLoop(model, config, callbacks) {
                 const batchSizeActual = Math.min(allExamples.length, batchSize);
                 const batch = allExamples.splice(0, batchSizeActual);
                 try {
-                    const { policyLoss, valueLoss } = await trainOnBatch(model, batch, optimizer);
+                    const { policyLoss, valueLoss, skipped } = await trainOnBatch(model, batch, optimizer);
                     if (onTrainStep) {
-                        onTrainStep({ policyLoss, valueLoss });
+                        onTrainStep({ policyLoss, valueLoss, skipped });
                     }
                 } catch (trainErr) {
                     console.error('trainOnBatch error:', trainErr);
@@ -181,9 +181,9 @@ export async function trainLoop(model, config, callbacks) {
 
         if (allExamples.length > 0) {
             try {
-                const { policyLoss, valueLoss } = await trainOnBatch(model, allExamples, optimizer);
+                const { policyLoss, valueLoss, skipped } = await trainOnBatch(model, allExamples, optimizer);
                 if (onTrainStep) {
-                    onTrainStep({ policyLoss, valueLoss });
+                    onTrainStep({ policyLoss, valueLoss, skipped });
                 }
             } catch (trainErr) {
                 console.error('trainOnBatch error (final):', trainErr);
@@ -209,14 +209,30 @@ async function trainOnBatch(model, batch, optimizer) {
     const valueYs = tf.tensor2d(valueTargets);
 
     try {
+        // Check for NaN in targets first
+        if (hasNaN(inputs) || hasNaN(policyTargets) || hasNaN(valueTargets)) {
+            console.warn('Skipping batch: NaN detected in training data');
+            return { policyLoss: 0, valueLoss: 0, skipped: true };
+        }
+
+        // Compute loss for minimization
+        let lossResult;
         optimizer.minimize(() => {
             return tf.tidy(() => {
                 const [pPred, vPred] = model.apply(xs);
                 const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred).mean();
                 const vLoss = tf.losses.meanSquaredError(valueYs, vPred).mean();
-                return tf.add(pLoss, vLoss);
+                lossResult = tf.add(pLoss, vLoss);
+                return lossResult;
             });
         });
+
+        // Check if loss is finite
+        const lossVal = lossResult ? lossResult.dataSync()[0] : NaN;
+        if (!Number.isFinite(lossVal)) {
+            console.warn('Skipping batch: non-finite loss detected:', lossVal);
+            return { policyLoss: 0, valueLoss: 0, skipped: true };
+        }
 
         // Reporting phase
         let pPred, vPred, pLoss, vLoss;
@@ -241,6 +257,18 @@ async function trainOnBatch(model, batch, optimizer) {
         policyYs.dispose();
         valueYs.dispose();
     }
+}
+
+function hasNaN(arr) {
+    if (!Array.isArray(arr)) return Number.isNaN(arr);
+    for (let i = 0; i < arr.length; i++) {
+        if (Array.isArray(arr[i])) {
+            if (hasNaN(arr[i])) return true;
+        } else if (Number.isNaN(arr[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 export function chooseBestMove(model, board) {
