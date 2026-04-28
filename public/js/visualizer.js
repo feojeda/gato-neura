@@ -26,11 +26,17 @@ export function renderGraph(container, model) {
 
     const layerPositions = [];
 
+    const layerNames = ['Entrada'];
+    for (let i = 1; i < layerSizes.length - 2; i++) layerNames.push(`Oculta ${i}`);
+    layerNames.push('Policy');
+    layerNames.push('Value');
+
     layerSizes.forEach((size, li) => {
         const x = layerSpacing * (li + 1);
         const displaySize = Math.min(size, maxNodes);
         const nodeSpacing = height / (displaySize + 1);
         const positions = [];
+        const fragment = document.createDocumentFragment();
 
         for (let ni = 0; ni < displaySize; ni++) {
             const y = nodeSpacing * (ni + 1);
@@ -43,8 +49,8 @@ export function renderGraph(container, model) {
                 text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('fill', '#a0a0a0');
                 text.setAttribute('font-size', '10');
-                text.textContent = `+${size - maxNodes + 1}`;
-                svg.appendChild(text);
+                text.textContent = `+${size - maxNodes}`;
+                fragment.appendChild(text);
             } else {
                 const circle = document.createElementNS(svgNS, 'circle');
                 circle.setAttribute('cx', x);
@@ -56,7 +62,7 @@ export function renderGraph(container, model) {
                 circle.setAttribute('data-layer', li);
                 circle.setAttribute('data-node', ni);
                 circle.style.cursor = 'pointer';
-                svg.appendChild(circle);
+                fragment.appendChild(circle);
             }
         }
 
@@ -66,12 +72,9 @@ export function renderGraph(container, model) {
         label.setAttribute('text-anchor', 'middle');
         label.setAttribute('fill', '#a0a0a0');
         label.setAttribute('font-size', '9');
-        const layerNames = ['Entrada'];
-        for (let i = 1; i < layerSizes.length - 2; i++) layerNames.push(`Oculta ${i}`);
-        layerNames.push('Policy');
-        layerNames.push('Value');
         label.textContent = layerNames[li] || `L${li}`;
-        svg.appendChild(label);
+        fragment.appendChild(label);
+        svg.appendChild(fragment);
 
         layerPositions.push(positions);
     });
@@ -90,14 +93,15 @@ export function renderConnections(container, model, layerPositions) {
 
     svg.insertBefore(connectionsGroup, svg.firstChild);
 
-    for (let li = 0; li < layerPositions.length - 1; li++) {
+    const maxConns = 50;
+    let connCount = 0;
+
+    for (let li = 0; li < layerPositions.length - 1 && connCount < maxConns; li++) {
         const kernel = weights[li] ? weights[li].kernel : null;
         if (!kernel) continue;
 
         const from = layerPositions[li];
         const to = layerPositions[li + 1];
-        const maxConns = 50;
-        let connCount = 0;
 
         for (let fi = 0; fi < from.length && connCount < maxConns; fi++) {
             for (let ti = 0; ti < to.length && connCount < maxConns; ti++) {
@@ -119,7 +123,9 @@ export function renderConnections(container, model, layerPositions) {
     }
 }
 
-export function renderHeatmap(container, weights, layerIdx) {
+const MAX_HEATMAP_CELLS = 2500;
+
+export function renderHeatmap(container, weights) {
     const svgNS = 'http://www.w3.org/2000/svg';
     if (!weights || !weights.kernel) {
         container.innerHTML = '<p style="color:#a0a0a0;font-size:0.8rem">Selecciona un nodo</p>';
@@ -129,6 +135,12 @@ export function renderHeatmap(container, weights, layerIdx) {
     const kernel = weights.kernel;
     const rows = kernel.length;
     const cols = kernel[0] ? kernel[0].length : 1;
+
+    if (rows * cols > MAX_HEATMAP_CELLS) {
+        container.innerHTML = `<p style="color:#a0a0a0;font-size:0.8rem">Matriz ${rows}×${cols} muy grande para visualizar</p>`;
+        return;
+    }
+
     const cellSize = Math.min(12, Math.floor(240 / Math.max(rows, cols)));
     const width = cols * cellSize;
     const height = rows * cellSize;
@@ -161,10 +173,10 @@ export function renderHeatmap(container, weights, layerIdx) {
 
 export function updateVisualization(container, heatmapContainer, model) {
     const layerPositions = renderGraph(container, model);
+    const weights = getWeights(model);
     renderConnections(container, model, layerPositions);
 
-    const weights = getWeights(model);
     if (weights.length > 0) {
-        renderHeatmap(heatmapContainer, weights[0], 0);
+        renderHeatmap(heatmapContainer, weights[0]);
     }
 }
