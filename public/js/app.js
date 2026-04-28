@@ -71,7 +71,7 @@ async function handleCellClick(pos) {
     ui.setTurnIndicator('Pensando...');
 
     const currentModel = state.model;
-    const boardForNetwork = state.board;
+    const boardForNetwork = game.invertBoard(state.board);
 
     try {
         await new Promise(r => setTimeout(r, 200));
