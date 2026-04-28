@@ -80,6 +80,48 @@ async function playOneGame(model, temperature) {
     }
 }
 
+async function playOneGameVsRandom(model, temperature) {
+    const examples = [];
+    let board = createBoard();
+
+    while (true) {
+        // Red's turn (always X)
+        const { policy } = await predict(model, board);
+        const maskedPolicy = maskInvalidMoves(policy, board);
+        examples.push({
+            board: [...board],
+            policy: [...maskedPolicy]
+        });
+        const move = sampleMove(maskedPolicy, temperature);
+        board = makeMove(board, move, PLAYER_X);
+
+        const term = isTerminal(board);
+        if (term.over) {
+            const reward = term.winner === null ? 0 : (term.winner === PLAYER_X ? 1 : -1);
+            return examples.map(ex => ({
+                input: ex.board,
+                policy: ex.policy,
+                value: reward
+            }));
+        }
+
+        // Random opponent's turn (O)
+        const validMoves = getValidMoves(board);
+        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+        board = makeMove(board, randomMove, PLAYER_O);
+
+        const term2 = isTerminal(board);
+        if (term2.over) {
+            const reward = term2.winner === null ? 0 : (term2.winner === PLAYER_X ? 1 : -1);
+            return examples.map(ex => ({
+                input: ex.board,
+                policy: ex.policy,
+                value: reward
+            }));
+        }
+    }
+}
+
 export async function trainLoop(model, config, callbacks) {
     const { numGames, batchSize, lr } = config;
     if (!numGames || numGames <= 0) throw new Error('config.numGames must be > 0');
@@ -101,8 +143,12 @@ export async function trainLoop(model, config, callbacks) {
         for (let g = 0; g < numGames; g++) {
             if (shouldStop && shouldStop()) break;
 
-            const temperature = Math.max(0.1, 1.0 - (g / numGames) * 0.9);
-            const examples = await playOneGame(model, temperature);
+            const temperature = Math.max(0.3, 1.0 - (g / numGames) * 0.7);
+            // First 40% of games vs random to build basic skills, then alternate
+            const useRandomOpponent = g < numGames * 0.4 || g % 2 === 0;
+            const examples = useRandomOpponent
+                ? await playOneGameVsRandom(model, temperature)
+                : await playOneGame(model, temperature);
             allExamples.push(...examples);
             totalGames++;
 
@@ -113,8 +159,10 @@ export async function trainLoop(model, config, callbacks) {
                 });
             }
 
-            if (allExamples.length >= batchSize) {
-                const batch = allExamples.splice(0, batchSize);
+            // Train more frequently: every 10 games or when buffer is full
+            if (allExamples.length >= batchSize || (totalGames % 10 === 0 && allExamples.length > 0)) {
+                const batchSizeActual = Math.min(allExamples.length, batchSize);
+                const batch = allExamples.splice(0, batchSizeActual);
                 try {
                     const { policyLoss, valueLoss } = await trainOnBatch(model, batch, optimizer);
                     if (onTrainStep) {
