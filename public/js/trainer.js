@@ -216,23 +216,16 @@ async function trainOnBatch(model, batch, optimizer) {
         }
 
         // Compute loss for minimization
-        let lossResult;
         optimizer.minimize(() => {
             return tf.tidy(() => {
                 const [pPred, vPred] = model.apply(xs);
-                const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred).mean();
+                const epsilon = 1e-7;
+                const clippedPred = tf.clipByValue(pPred, epsilon, 1 - epsilon);
+                const pLoss = tf.neg(tf.mean(tf.sum(tf.mul(policyYs, tf.log(clippedPred)), -1)));
                 const vLoss = tf.losses.meanSquaredError(valueYs, vPred).mean();
-                lossResult = tf.add(pLoss, vLoss);
-                return lossResult;
+                return tf.add(pLoss, vLoss);
             });
         });
-
-        // Check if loss is finite
-        const lossVal = lossResult ? lossResult.dataSync()[0] : NaN;
-        if (!Number.isFinite(lossVal)) {
-            console.warn('Skipping batch: non-finite loss detected:', lossVal);
-            return { policyLoss: 0, valueLoss: 0, skipped: true };
-        }
 
         // Reporting phase
         let pPred, vPred, pLoss, vLoss;
@@ -240,7 +233,9 @@ async function trainOnBatch(model, batch, optimizer) {
         let valueLoss = 0;
         try {
             [pPred, vPred] = model.apply(xs);
-            pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred).mean();
+            const epsilon = 1e-7;
+            const clippedPred = tf.clipByValue(pPred, epsilon, 1 - epsilon);
+            pLoss = tf.neg(tf.mean(tf.sum(tf.mul(policyYs, tf.log(clippedPred)), -1)));
             vLoss = tf.losses.meanSquaredError(valueYs, vPred).mean();
             policyLoss = (await pLoss.data())[0];
             valueLoss = (await vLoss.data())[0];
