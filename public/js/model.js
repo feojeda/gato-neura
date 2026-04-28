@@ -1,6 +1,8 @@
-import { PLAYER_X, isTerminal } from './game.js';
-
 export function createModel(hiddenLayers = [64, 32]) {
+    if (!Array.isArray(hiddenLayers) || !hiddenLayers.every(n => Number.isInteger(n) && n > 0)) {
+        throw new Error('hiddenLayers must be an array of positive integers');
+    }
+
     const input = tf.input({ shape: [9], name: 'board_input' });
 
     let x = input;
@@ -39,14 +41,22 @@ export function createModel(hiddenLayers = [64, 32]) {
 }
 
 export async function predict(model, board) {
+    if (!Array.isArray(board) || board.length !== 9) {
+        throw new Error('board must be an array of length 9');
+    }
+
     const input = tf.tensor2d([board]);
-    const [policyTensor, valueTensor] = model.predict(input);
-    const policy = await policyTensor.array();
-    const value = (await valueTensor.array())[0][0];
-    input.dispose();
-    policyTensor.dispose();
-    valueTensor.dispose();
-    return { policy: policy[0], value };
+    let policyTensor, valueTensor;
+    try {
+        [policyTensor, valueTensor] = model.predict(input);
+        const policy = await policyTensor.array();
+        const value = (await valueTensor.array())[0][0];
+        return { policy: policy[0], value };
+    } finally {
+        input.dispose();
+        if (policyTensor) policyTensor.dispose();
+        if (valueTensor) valueTensor.dispose();
+    }
 }
 
 export function getWeights(model) {
@@ -66,7 +76,7 @@ export function getWeights(model) {
 }
 
 export function getModelInfo(model) {
-    const layerSizes = [9];
+    const layerSizes = [model.inputs[0].shape[1]];
     for (const layer of model.layers) {
         const cfg = layer.getConfig();
         if (cfg.units) layerSizes.push(cfg.units);
