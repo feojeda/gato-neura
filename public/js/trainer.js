@@ -16,6 +16,14 @@ function maskInvalidMoves(policy, board) {
     }
     if (sum > 0) {
         for (let i = 0; i < 9; i++) masked[i] /= sum;
+    } else {
+        const validMoves = [];
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === 0) validMoves.push(i);
+        }
+        for (const m of validMoves) {
+            masked[m] = 1 / validMoves.length;
+        }
     }
     return masked;
 }
@@ -138,11 +146,13 @@ async function trainOnBatch(model, batch, optimizer) {
     const policyYs = tf.tensor2d(policyTargets);
     const valueYs = tf.tensor2d(valueTargets);
 
-    await optimizer.minimize(() => {
-        const [pPred, vPred] = model.apply(xs);
-        const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
-        const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
-        return tf.add(pLoss, vLoss);
+    optimizer.minimize(() => {
+        return tf.tidy(() => {
+            const [pPred, vPred] = model.apply(xs);
+            const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
+            const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+            return tf.add(pLoss, vLoss);
+        });
     });
 
     // Compute losses for reporting (extra forward pass)
@@ -164,6 +174,8 @@ async function trainOnBatch(model, batch, optimizer) {
 }
 
 export function chooseBestMove(model, board) {
+    if (!model) throw new Error('model is required');
+    if (!board || !Array.isArray(board)) throw new Error('board array is required');
     return predict(model, board).then(({ policy }) => {
         const valid = getValidMoves(board);
         let bestMove = valid[0];
