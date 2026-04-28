@@ -169,11 +169,27 @@ export function updateMetrics(data) {
     }
     if (data.policyLoss !== undefined) {
         const el = document.getElementById('metric-ploss');
-        if (el) el.textContent = data.policyLoss.toFixed(4);
+        if (el) {
+            if (Number.isNaN(data.policyLoss)) {
+                el.textContent = 'Error';
+            } else {
+                el.textContent = data.policyLoss.toFixed(4);
+            }
+        }
     }
     if (data.valueLoss !== undefined) {
         const el = document.getElementById('metric-vloss');
-        if (el) el.textContent = data.valueLoss.toFixed(4);
+        if (el) {
+            if (Number.isNaN(data.valueLoss)) {
+                el.textContent = 'Error';
+            } else {
+                el.textContent = data.valueLoss.toFixed(4);
+            }
+        }
+    }
+    if (data.error) {
+        const el = document.getElementById('metric-ploss');
+        if (el) el.textContent = 'Error';
     }
 }
 

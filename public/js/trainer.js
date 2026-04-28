@@ -115,9 +115,16 @@ export async function trainLoop(model, config, callbacks) {
 
             if (allExamples.length >= batchSize) {
                 const batch = allExamples.splice(0, batchSize);
-                const { policyLoss, valueLoss } = await trainOnBatch(model, batch, optimizer);
-                if (onTrainStep) {
-                    onTrainStep({ policyLoss, valueLoss });
+                try {
+                    const { policyLoss, valueLoss } = await trainOnBatch(model, batch, optimizer);
+                    if (onTrainStep) {
+                        onTrainStep({ policyLoss, valueLoss });
+                    }
+                } catch (trainErr) {
+                    console.error('trainOnBatch error:', trainErr);
+                    if (onTrainStep) {
+                        onTrainStep({ policyLoss: NaN, valueLoss: NaN, error: trainErr.message });
+                    }
                 }
             }
 
@@ -125,9 +132,16 @@ export async function trainLoop(model, config, callbacks) {
         }
 
         if (allExamples.length > 0) {
-            const { policyLoss, valueLoss } = await trainOnBatch(model, allExamples, optimizer);
-            if (onTrainStep) {
-                onTrainStep({ policyLoss, valueLoss });
+            try {
+                const { policyLoss, valueLoss } = await trainOnBatch(model, allExamples, optimizer);
+                if (onTrainStep) {
+                    onTrainStep({ policyLoss, valueLoss });
+                }
+            } catch (trainErr) {
+                console.error('trainOnBatch error (final):', trainErr);
+                if (onTrainStep) {
+                    onTrainStep({ policyLoss: NaN, valueLoss: NaN, error: trainErr.message });
+                }
             }
         }
     } finally {
@@ -150,8 +164,8 @@ async function trainOnBatch(model, batch, optimizer) {
         optimizer.minimize(() => {
             return tf.tidy(() => {
                 const [pPred, vPred] = model.apply(xs);
-                const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
-                const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+                const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred).mean();
+                const vLoss = tf.losses.meanSquaredError(valueYs, vPred).mean();
                 return tf.add(pLoss, vLoss);
             });
         });
@@ -162,8 +176,8 @@ async function trainOnBatch(model, batch, optimizer) {
         let valueLoss = 0;
         try {
             [pPred, vPred] = model.apply(xs);
-            pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
-            vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+            pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred).mean();
+            vLoss = tf.losses.meanSquaredError(valueYs, vPred).mean();
             policyLoss = (await pLoss.data())[0];
             valueLoss = (await vLoss.data())[0];
         } finally {
