@@ -156,17 +156,22 @@ async function trainOnBatch(model, batch, optimizer) {
             });
         });
 
-        // Compute losses for reporting (extra forward pass)
-        const [pPred, vPred] = model.apply(xs);
-        const pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
-        const vLoss = tf.losses.meanSquaredError(valueYs, vPred);
-        const policyLoss = (await pLoss.data())[0];
-        const valueLoss = (await vLoss.data())[0];
-
-        pPred.dispose();
-        vPred.dispose();
-        pLoss.dispose();
-        vLoss.dispose();
+        // Reporting phase
+        let pPred, vPred, pLoss, vLoss;
+        let policyLoss = 0;
+        let valueLoss = 0;
+        try {
+            [pPred, vPred] = model.apply(xs);
+            pLoss = tf.losses.categoricalCrossentropy(policyYs, pPred);
+            vLoss = tf.losses.meanSquaredError(valueYs, vPred);
+            policyLoss = (await pLoss.data())[0];
+            valueLoss = (await vLoss.data())[0];
+        } finally {
+            if (pPred) pPred.dispose();
+            if (vPred) vPred.dispose();
+            if (pLoss) pLoss.dispose();
+            if (vLoss) vLoss.dispose();
+        }
 
         return { policyLoss, valueLoss };
     } finally {

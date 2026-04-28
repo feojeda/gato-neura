@@ -33,6 +33,7 @@ export function setTurnIndicator(text) {
 
 export function setConfidence(value) {
     const el = document.getElementById('confidence-display');
+    if (!el) return;
     if (value === null || value === undefined) {
         el.textContent = 'Confianza: —';
     } else {
