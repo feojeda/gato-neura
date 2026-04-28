@@ -82,11 +82,10 @@ export function renderGraph(container, model) {
     return layerPositions;
 }
 
-export function renderConnections(container, model, layerPositions) {
+export function renderConnections(container, weights, layerPositions) {
     const svg = container.querySelector('svg');
     if (!svg) return;
 
-    const weights = getWeights(model);
     const svgNS = 'http://www.w3.org/2000/svg';
     const connectionsGroup = document.createElementNS(svgNS, 'g');
     connectionsGroup.setAttribute('class', 'connections');
@@ -174,7 +173,7 @@ export function renderHeatmap(container, weights) {
 export function updateVisualization(container, heatmapContainer, model) {
     const layerPositions = renderGraph(container, model);
     const weights = getWeights(model);
-    renderConnections(container, model, layerPositions);
+    renderConnections(container, weights, layerPositions);
 
     if (weights.length > 0) {
         renderHeatmap(heatmapContainer, weights[0]);
