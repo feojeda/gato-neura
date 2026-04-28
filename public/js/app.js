@@ -52,35 +52,41 @@ async function handleCellClick(pos) {
     if (!state.isPlayerTurn || state.gameOver || state.isTraining) return;
     if (state.board[pos] !== game.EMPTY) return;
 
-    state.isPlayerTurn = false;
-
     const next = game.makeMove(state.board, pos, game.PLAYER_X);
-    if (!next) {
-        state.isPlayerTurn = true;
-        return;
-    }
+    if (!next) return;
 
     state.board = next;
+    state.isPlayerTurn = false;
+    state.isWaitingForNetwork = true;
     ui.renderBoard(state.board);
 
     const term = game.isTerminal(state.board);
     if (term.over) {
         endGame(term);
+        state.isWaitingForNetwork = false;
         return;
     }
 
     ui.setTurnIndicator('Pensando...');
 
-    await new Promise(r => setTimeout(r, 200));
-
+    const currentModel = state.model;
     const boardForNetwork = state.board;
-    state.isWaitingForNetwork = true;
 
     try {
-        const { move } = await trainer.chooseBestMove(state.model, boardForNetwork);
+        await new Promise(r => setTimeout(r, 200));
+        if (!state.isWaitingForNetwork) return;
+        if (state.isTraining) {
+            state.isWaitingForNetwork = false;
+            state.isPlayerTurn = true;
+            return;
+        }
+
+        const { move } = await trainer.chooseBestMove(currentModel, boardForNetwork);
         if (!state.isWaitingForNetwork) return;
 
-        const { value } = await model.predict(state.model, boardForNetwork);
+        const { value } = await model.predict(currentModel, boardForNetwork);
+        if (!state.isWaitingForNetwork) return;
+
         ui.setConfidence(value);
 
         state.board = game.makeMove(state.board, move, game.PLAYER_O);
@@ -96,12 +102,10 @@ async function handleCellClick(pos) {
         ui.setTurnIndicator('Tu turno (X)');
     } catch (err) {
         console.error('Network move error:', err);
+        state.isPlayerTurn = true;
+        ui.setTurnIndicator('Tu turno (X)');
     } finally {
         state.isWaitingForNetwork = false;
-        if (!state.gameOver && !state.isTraining) {
-            state.isPlayerTurn = true;
-            ui.setTurnIndicator('Tu turno (X)');
-        }
     }
 }
 
@@ -164,6 +168,9 @@ function resetAll() {
 }
 
 async function startTraining() {
+    if (state.isWaitingForNetwork) return;
+    if (state.isTraining) return;
+
     const config = ui.getTrainingConfig();
     const layers = ui.getLayersConfig();
 
@@ -207,16 +214,6 @@ async function startTraining() {
         console.error('Training error:', err);
         state.isTraining = false;
         ui.setTrainingUI(false);
-    }
-
-    if (state.shouldStop) {
-        state.isTraining = false;
-        ui.setTrainingUI(false);
-        viz.updateVisualization(
-            document.getElementById('model-viz'),
-            document.getElementById('heatmap-container'),
-            state.model
-        );
     }
 }
 
