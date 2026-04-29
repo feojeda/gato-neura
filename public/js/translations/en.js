@@ -4,7 +4,8 @@ export default {
     app: {
         title: 'Gato Neura — Neural Network for Tic-Tac-Toe',
         subtitle: 'AlphaZero-style neural network for Tic-Tac-Toe',
-        howItWorks: 'How does this work?'
+        howItWorks: 'How does this work?',
+        about: 'About'
     },
     panel: {
         model: 'Model',
@@ -173,6 +174,13 @@ export default {
         gpuDesc2: '<strong>You don\'t have to do anything.</strong> TensorFlow.js automatically detects if your browser has WebGL and uses it. Almost all modern browsers have it enabled by default.',
         whyLosesTitle: 'Why does the network sometimes lose?',
         whyLosesDesc: 'With fewer than 200 training games, the network is still learning. Also, if <strong>temperature</strong> is high, the network explores instead of exploiting its best moves.'
+    },
+    about: {
+        title: 'About Gato Neura',
+        body: `<p><strong>Gato Neura</strong> is an open-source educational project that teaches how AlphaZero-style reinforcement learning works, right in your browser. No server, no cloud — everything runs locally using TensorFlow.js.</p>
+        <p>The neural network learns to play Tic-Tac-Toe by playing thousands of games against itself and a perfect minimax opponent, guided by Monte Carlo Tree Search (MCTS). You can watch it learn in real time, inspect its internal weights, and even download the trained model to share or continue training later.</p>
+        <p>Built with curiosity and coffee by <a href="https://github.com/feojeda" target="_blank" rel="noopener">feojeda</a>.</p>
+        <p><a href="https://github.com/feojeda/gato-neura" target="_blank" rel="noopener" class="github-link">View source on GitHub →</a></p>`
     },
     tooltip: {
         details: 'Click for details'

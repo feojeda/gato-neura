@@ -12,6 +12,7 @@
         <h1>Gato Neura</h1>
         <p data-i18n="app.subtitle">AlphaZero-style neural network for Tic-Tac-Toe</p>
         <div class="header-controls">
+            <button id="btn-about" class="btn-info" data-i18n="app.about">About</button>
             <button id="btn-info" class="btn-info" data-i18n="app.howItWorks">How does this work?</button>
             <label class="lang-selector">
                 <select id="lang-select">
@@ -145,6 +146,13 @@
         </div>
     </div>
 
+    <div id="about-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 data-i18n="about.title">About Gato Neura</h2>
+            <div class="modal-body" id="about-modal-body"></div>
+        </div>
+    </div>
     <div id="info-modal" class="modal hidden">
         <div class="modal-content">
             <button class="modal-close">&times;</button>
@@ -152,6 +160,6 @@
             <div class="modal-body" id="info-modal-body"></div>
         </div>
     </div>
-    <script type="module" src="js/app.js?v=6"></script>
+    <script type="module" src="js/app.js?v=7"></script>
 </body>
 </html>

@@ -4,7 +4,8 @@ export default {
     app: {
         title: 'Gato Neura — 三目並べニューラルネットワーク',
         subtitle: 'AlphaZeroスタイルの三目並べニューラルネットワーク',
-        howItWorks: 'これはどうやって動くの？'
+        howItWorks: 'これはどうやって動くの？',
+        about: 'について'
     },
     panel: {
         model: 'モデル',
@@ -173,6 +174,13 @@ export default {
         gpuDesc2: '<strong>何もする必要はありません。</strong> TensorFlow.js は自動的にブラウザがWebGLを持っているか検出し、使用します。ほぼすべてのモダンブラウザはデフォルトで有効になっています。',
         whyLosesTitle: 'なぜネットワークは時々負けるの？',
         whyLosesDesc: '200局未満の学習では、ネットワークはまだ学習中。また、<strong>温度</strong>が高い場合、ネットワークは最善手を活用するのではなく探索する。'
+    },
+    about: {
+        title: 'Gato Neura について',
+        body: `<p><strong>Gato Neura</strong> は、ブラウザ内で AlphaZero スタイルの強化学習がどのように機能するかを教えるオープンソースの教育プロジェクトです。サーバーなし、クラウドなし — すべて TensorFlow.js を使用してローカルで実行されます。</p>
+        <p>ニューラルネットワークは、モンテカルロ木探索（MCTS）によって導かれながら、自分自身と完璧なミニマックス対戦相手と数千回対戦して三目並べを学習します。リアルタイムで学習を見たり、内部の重みを検査したり、訓練されたモデルをダウンロードして共有したり、後で訓練を続けたりすることができます。</p>
+        <p>好奇心とコーヒーで <a href="https://github.com/feojeda" target="_blank" rel="noopener">feojeda</a> によって構築されました。</p>
+        <p><a href="https://github.com/feojeda/gato-neura" target="_blank" rel="noopener" class="github-link">GitHub でソースコードを見る →</a></p>`
     },
     tooltip: {
         details: '詳細を見る'

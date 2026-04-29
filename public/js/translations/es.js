@@ -4,7 +4,8 @@ export default {
     app: {
         title: 'Gato Neura — Red Neuronal para Tic-Tac-Toe',
         subtitle: 'Red neuronal estilo AlphaZero para Tic-Tac-Toe',
-        howItWorks: '¿Cómo funciona esto?'
+        howItWorks: '¿Cómo funciona esto?',
+        about: 'Acerca de'
     },
     panel: {
         model: 'Modelo',
@@ -173,6 +174,13 @@ export default {
         gpuDesc2: '<strong>No tienes que hacer nada.</strong> TensorFlow.js detecta automáticamente si tu navegador tiene WebGL y lo usa. Casi todos los navegadores modernos lo tienen activado por defecto.',
         whyLosesTitle: '¿Por qué la red a veces pierde?',
         whyLosesDesc: 'Con menos de 200 partidas de entrenamiento, la red aún está aprendiendo. También, si la <strong>temperatura</strong> es alta, la red explora en vez de explotar sus mejores movimientos.'
+    },
+    about: {
+        title: 'Acerca de Gato Neura',
+        body: `<p><strong>Gato Neura</strong> es un proyecto educativo de código abierto que enseña cómo funciona el aprendizaje por refuerzo estilo AlphaZero, directamente en tu navegador. Sin servidor, sin nube — todo corre localmente usando TensorFlow.js.</p>
+        <p>La red neuronal aprende a jugar Tic-Tac-Toe jugando miles de partidas contra sí misma y contra un oponente minimax perfecto, guiada por Monte Carlo Tree Search (MCTS). Puedes verla aprender en tiempo real, inspeccionar sus pesos internos, e incluso descargar el modelo entrenado para compartirlo o continuar entrenando después.</p>
+        <p>Construido con curiosidad y café por <a href="https://github.com/feojeda" target="_blank" rel="noopener">feojeda</a>.</p>
+        <p><a href="https://github.com/feojeda/gato-neura" target="_blank" rel="noopener" class="github-link">Ver código en GitHub →</a></p>`
     },
     tooltip: {
         details: 'Click para ver detalles'

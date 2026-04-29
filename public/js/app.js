@@ -84,6 +84,7 @@ function setupUI() {
             i18n.setLocale(e.target.value);
             i18n.bindDOM();
             buildInfoModal();
+            buildAboutModal();
             // Re-render any dynamic text that might be visible
             ui.renderBoard(state.board);
             if (!state.isWaitingForNetwork && !state.gameOver) {
@@ -108,6 +109,25 @@ function setupUI() {
     if (modal) {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.classList.add('hidden');
+        });
+    }
+
+    // About modal
+    const aboutModal = document.getElementById('about-modal');
+    const btnAbout = document.getElementById('btn-about');
+    const aboutClose = aboutModal?.querySelector('.modal-close');
+    if (btnAbout && aboutModal) {
+        btnAbout.addEventListener('click', () => {
+            buildAboutModal();
+            aboutModal.classList.remove('hidden');
+        });
+    }
+    if (aboutClose && aboutModal) {
+        aboutClose.addEventListener('click', () => aboutModal.classList.add('hidden'));
+    }
+    if (aboutModal) {
+        aboutModal.addEventListener('click', (e) => {
+            if (e.target === aboutModal) aboutModal.classList.add('hidden');
         });
     }
 
@@ -162,6 +182,12 @@ function buildInfoModal() {
         <h3>${i18n.t('info.whyLosesTitle')}</h3>
         <p>${i18n.t('info.whyLosesDesc')}</p>
     `;
+}
+
+function buildAboutModal() {
+    const body = document.getElementById('about-modal-body');
+    if (!body) return;
+    body.innerHTML = i18n.t('about.body');
 }
 
 function refreshVisualization() {

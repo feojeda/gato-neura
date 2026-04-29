@@ -4,7 +4,8 @@ export default {
     app: {
         title: 'Gato Neura — 井字棋神经网络',
         subtitle: 'AlphaZero风格的井字棋神经网络',
-        howItWorks: '这是如何运作的？'
+        howItWorks: '这是如何运作的？',
+        about: '关于'
     },
     panel: {
         model: '模型',
@@ -173,6 +174,13 @@ export default {
         gpuDesc2: '<strong>你不需要做任何事。</strong> TensorFlow.js 自动检测浏览器是否有WebGL并使用。几乎所有现代浏览器都默认启用。',
         whyLosesTitle: '为什么网络有时会输？',
         whyLosesDesc: '训练少于200局时，网络还在学习中。另外，如果<strong>温度</strong>很高，网络会探索而不是利用它的最佳走法。'
+    },
+    about: {
+        title: '关于 Gato Neura',
+        body: `<p><strong>Gato Neura</strong> 是一个开源教育项目，直接在浏览器中教你 AlphaZero 风格的强化学习是如何工作的。无需服务器，无需云端 — 一切均使用 TensorFlow.js 在本地运行。</p>
+        <p>神经网络通过与自身和完美的极小极大对手进行数千场对局来学习井字棋，由蒙特卡洛树搜索（MCTS）引导。你可以实时观看它学习，检查其内部权重，甚至下载训练好的模型以分享或稍后继续训练。</p>
+        <p>由 <a href="https://github.com/feojeda" target="_blank" rel="noopener">feojeda</a> 用好奇心和咖啡构建。</p>
+        <p><a href="https://github.com/feojeda/gato-neura" target="_blank" rel="noopener" class="github-link">在 GitHub 上查看源代码 →</a></p>`
     },
     tooltip: {
         details: '点击查看详情'
