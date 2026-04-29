@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://feojeda.github.io/gato-neura/sitemap.xml

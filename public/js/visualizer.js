@@ -1,4 +1,5 @@
 import { getWeights, getModelInfo } from './model.js';
+import * as i18n from './i18n.js';
 
 function weightToColor(w) {
     if (w >= 0) {
@@ -26,10 +27,10 @@ export function renderGraph(container, model) {
 
     const layerPositions = [];
 
-    const layerNames = ['Entrada'];
-    for (let i = 1; i < layerSizes.length - 2; i++) layerNames.push(`Oculta ${i}`);
-    layerNames.push('Policy');
-    layerNames.push('Value');
+    const layerNames = [i18n.t('model.input')];
+    for (let i = 1; i < layerSizes.length - 2; i++) layerNames.push(i18n.t('model.hidden', { n: i }));
+    layerNames.push(i18n.t('model.policy'));
+    layerNames.push(i18n.t('model.value'));
 
     layerSizes.forEach((size, li) => {
         const x = layerSpacing * (li + 1);
@@ -127,7 +128,7 @@ const MAX_HEATMAP_CELLS = 2500;
 export function renderHeatmap(container, weights) {
     const svgNS = 'http://www.w3.org/2000/svg';
     if (!weights || !weights.kernel) {
-        container.innerHTML = '<p style="color:#a0a0a0;font-size:0.8rem">Selecciona un nodo</p>';
+        container.innerHTML = `<p style="color:#a0a0a0;font-size:0.8rem">${i18n.t('visualizer.selectNode')}</p>`;
         return;
     }
 
@@ -136,7 +137,7 @@ export function renderHeatmap(container, weights) {
     const cols = kernel[0] ? kernel[0].length : 1;
 
     if (rows * cols > MAX_HEATMAP_CELLS) {
-        container.innerHTML = `<p style="color:#a0a0a0;font-size:0.8rem">Matriz ${rows}×${cols} muy grande para visualizar</p>`;
+        container.innerHTML = `<p style="color:#a0a0a0;font-size:0.8rem">${i18n.t('visualizer.matrixTooLarge', { r: rows, c: cols })}</p>`;
         return;
     }
 
@@ -151,7 +152,7 @@ export function renderHeatmap(container, weights) {
     container.appendChild(svg);
 
     const title = document.createElement('p');
-    title.textContent = `Pesos: ${weights.name} (${rows}×${cols})`;
+    title.textContent = i18n.t('visualizer.weights', { name: weights.name, r: rows, c: cols });
     title.style.cssText = 'color:#a0a0a0;font-size:0.75rem;margin-bottom:0.25rem;';
     container.insertBefore(title, svg);
 

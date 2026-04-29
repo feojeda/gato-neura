@@ -55,3 +55,49 @@ export function invertBoard(board) {
 export function boardToInput(board) {
     return board.map(c => c);
 }
+
+/* ── Perfect Minimax Solver ────────────────────────────────────── */
+
+const minimaxCache = new Map();
+
+function boardKey(board) {
+    return board.map(c => c === EMPTY ? '0' : c === PLAYER_X ? '1' : '2').join('');
+}
+
+export function minimax(board, player) {
+    const key = boardKey(board) + ':' + player;
+    if (minimaxCache.has(key)) return minimaxCache.get(key);
+
+    const term = isTerminal(board);
+    if (term.over) {
+        const score = term.winner === null ? 0 : (term.winner === player ? 1 : -1);
+        minimaxCache.set(key, { score, move: null });
+        return { score, move: null };
+    }
+
+    const moves = getValidMoves(board);
+    const opponent = player === PLAYER_X ? PLAYER_O : PLAYER_X;
+    let bestScore = -Infinity;
+    let bestMoves = [];
+
+    for (const move of moves) {
+        const next = makeMove(board, move, player);
+        const result = minimax(next, opponent);
+        const score = -result.score; // opponent's score from their perspective
+        if (score > bestScore) {
+            bestScore = score;
+            bestMoves = [move];
+        } else if (score === bestScore) {
+            bestMoves.push(move);
+        }
+    }
+
+    const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+    const result = { score: bestScore, move: chosen };
+    minimaxCache.set(key, result);
+    return result;
+}
+
+export function getBestMove(board, player) {
+    return minimax(board, player).move;
+}

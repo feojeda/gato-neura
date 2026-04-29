@@ -1,0 +1,33 @@
+{
+  "name": "gato-neura",
+  "version": "1.0.0",
+  "description": "Interactive browser tutorial to learn how neural networks and AI models are trained using reinforcement learning, self-play, and Monte Carlo Tree Search.",
+  "keywords": [
+    "neural-network",
+    "machine-learning",
+    "tutorial",
+    "education",
+    "tensorflowjs",
+    "reinforcement-learning",
+    "alpha-zero",
+    "self-play",
+    "mcts",
+    "browser",
+    "ai-training",
+    "tic-tac-toe"
+  ],
+  "author": "feojeda",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feojeda/gato-neura.git"
+  },
+  "homepage": "https://feojeda.github.io/gato-neura/",
+  "private": true,
+  "scripts": {
+    "test": "node test-integration.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.0"
+  }
+}
