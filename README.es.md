@@ -118,7 +118,11 @@ Porcentaje de partidas que la red gano durante la sesion de entrenamiento actual
 ### Policy Loss
 Que tan bien la red predice *cual* movimiento jugar.
 
-Menor es mejor. Con 9 casillas, el azar puro tiene una perdida baseline de ~2.197. Una perdida de 2.1 significa que solo estas ~5% mejor que un dado.
+Menor es mejor. Con 9 casillas, el azar puro tiene una perdida baseline de:
+
+$$\mathcal{L}_{\text{azar}} = -\log\frac{1}{9} = 2.197$$
+
+Una perdida de 2.1 significa que solo estas ~5% mejor que un dado.
 
 | Badge | Umbral |
 |-------|--------|
@@ -130,7 +134,9 @@ Menor es mejor. Con 9 casillas, el azar puro tiene una perdida baseline de ~2.19
 ### Value Loss
 Que tan bien la red evalua si una posicion es ganadora (+1), perdedora (-1), o empate (0).
 
-Es Error Cuadratico Medio (MSE). Valores bajos = mejor evaluacion.
+Es Error Cuadratico Medio (MSE):
+
+$$\mathcal{L}_V = \frac{1}{N}\sum_{i=1}^{N}(v_i^{\text{target}} - v_i^{\text{pred}})^2$$
 
 | Badge | Umbral |
 |-------|--------|
@@ -162,67 +168,83 @@ Grafico en tiempo real de policy loss (azul) y value loss (rojo) sobre los ultim
 
 La red es un **perceptron multicapa** con dos cabezas de salida:
 
-```
-Entrada(9) -> Densa(64, ReLU) -> Densa(32, ReLU) -> [Policy(9, softmax), Value(1, tanh)]
-```
+$$
+\mathbf{x} \in \mathbb{R}^9 \xrightarrow{\text{Densa}} \mathbf{h}_1 \xrightarrow{\text{ReLU}} \mathbf{h}_2 \xrightarrow{\text{ReLU}} \begin{cases} \mathbf{p} \in \mathbb{R}^9 & \text{(Policy)} \\ v \in \mathbb{R} & \text{(Value)} \end{cases}
+$$
 
 **Codificacion de entrada:**
-- +1: ficha de la red
-- -1: ficha del oponente
-- 0: vacio
+- $+1$: ficha de la red
+- $-1$: ficha del oponente
+- $0$: vacio
 
-**Invariancia de perspectiva:** La red siempre se ve a si misma como +1. Si juega como O, el tablero se invierte antes de entrar a la red.
+**Invariancia de perspectiva:** La red siempre se ve a si misma como $+1$. Si juega como O, el tablero se invierte antes de entrar a la red.
 
 ### Cabeza de Policy
 
-Emite una distribucion de probabilidad sobre las 9 casillas usando softmax. Movimientos ilegales se enmascaran a probabilidad 0, luego se renormaliza.
+Emite una distribucion de probabilidad sobre las 9 casillas usando softmax:
+
+$$p_i = \frac{e^{z_i}}{\sum_{j} e^{z_j}}$$
+
+Movimientos ilegales se enmascaran a probabilidad 0, luego se renormaliza la distribucion.
+
+### Cabeza de Value
+
+Una sola neurona con activacion $\tanh$, dando un escalar en $[-1, +1]$:
+
+$$v = \tanh(w^T h + b)$$
 
 ### Perdida de Policy: Cross-Entropy
 
-La red se entrena para coincidir con una policy objetivo (de los conteos de visitas de MCTS):
+La red se entrena para coincidir con una policy objetivo $\pi$ (de los conteos de visitas de MCTS):
 
-```
-L_P = -media( sum( pi * log(p_pred) ) )
-```
+$$\mathcal{L}_P = -\frac{1}{N}\sum_{i=1}^{N}\sum_{j=1}^{9} \pi_{ij} \log \hat{p}_{ij}$$
 
-Recortada para estabilidad numerica con epsilon = 1e-7.
+Recortada para estabilidad numerica ($\varepsilon = 10^{-7}$):
+
+$$\hat{p}_{ij} = \text{clip}(p_{ij}, \varepsilon, 1-\varepsilon)$$
 
 ### Perdida de Value: Error Cuadratico Medio
 
-```
-L_V = media( (z - v_pred)^2 )
-```
+$$\mathcal{L}_V = \frac{1}{N}\sum_{i=1}^{N}(z_i - v_i)^2$$
 
-donde z esta en {-1, 0, +1} segun el resultado de la partida.
+donde $z_i \in \{-1, 0, +1\}$ es el resultado de la partida desde la perspectiva del jugador actual.
 
 ### Perdida Total
 
-```
-L = L_P + L_V
-```
+$$\mathcal{L} = \mathcal{L}_P + \mathcal{L}_V$$
 
 ### Muestreo con Temperatura
 
-Durante el entrenamiento, los movimientos se samplean con temperatura T para balancear exploracion vs explotacion:
+Durante el entrenamiento, los movimientos se samplean con temperatura $T$ para balancear exploracion vs explotacion:
 
-```
-p_i = p_i^(1/T) / sum( p_j^(1/T) )
-```
+$$\tilde{p}_i = \frac{p_i^{1/T}}{\sum_j p_j^{1/T}}$$
 
-- T = 1.0: samplea de la policy cruda (mucha exploracion)
-- T -> 0: siempre elige la mayor probabilidad (pura explotacion)
+- $T = 1.0$: samplea de la policy cruda (mucha exploracion)
+- $T \to 0$: siempre elige la mayor probabilidad (pura explotacion)
+- En esta implementacion, $T$ decae linealmente de 1.0 a 0.3 durante el entrenamiento.
 
 ### Monte Carlo Tree Search (MCTS)
 
-Despues de ~50 juegos, MCTS se activa. Para cada movimiento, la red corre N simulaciones:
+Despues de ~50 juegos, MCTS se activa. Para cada movimiento, la red corre $N$ simulaciones:
 
-1. **Seleccion**: Recorre el arbol usando la puntuacion UCB1 que combina valor Q + bonificacion de exploracion.
+1. **Seleccion**: Recorre el arbol usando la puntuacion UCB1:
+
+$$U(s, a) = Q(s, a) + c_{puct} \cdot P(a|s) \cdot \frac{\sqrt{N(s)}}{1 + N(s, a)}$$
+
 2. **Expansion**: Al llegar a un nodo no visitado, lo expande usando la policy de la red.
 3. **Evaluacion**: Usa el valor estimado por la red para nodos hoja.
 4. **Backup**: Propaga el resultado hacia arriba, invirtiendo el signo en cada nivel (juego de suma cero).
 5. **Seleccion de movimiento**: Juega proporcional a los conteos de visita.
 
 Cada simulacion requiere un forward pass por la red, asi que 50 simulaciones es ~50x mas lento que juego greedy.
+
+### Gradient Clipping
+
+Para prevenir gradientes explosivos, los gradientes se recortan a una norma maxima:
+
+$$\mathbf{g} \leftarrow \frac{\mathbf{g}}{\max(1, \|\mathbf{g}\|_2 / g_{\max})}$$
+
+En esta implementacion, $g_{\max} = 1.0$.
 
 ---
 
