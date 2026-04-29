@@ -1,388 +1,337 @@
 # Gato Neura
 
-Red neuronal estilo AlphaZero que aprende a jugar tic-tac-toe (gato) directamente en el navegador. Entrena mediante self-play y juego contra oponentes aleatorios, con visualización en tiempo real de la arquitectura y pesos del modelo.
+<p align="center">
+  <img src="https://img.shields.io/badge/lang-en-blue" alt="English">
+  <a href="README.es.md"><img src="https://img.shields.io/badge/lang-es-green" alt="Español"></a>
+  <a href="README.zh.md"><img src="https://img.shields.io/badge/lang-zh-red" alt="中文"></a>
+  <a href="README.ja.md"><img src="https://img.shields.io/badge/lang-ja-orange" alt="日本語"></a>
+</p>
 
-**Demo:** https://feojeda.github.io/gato-neura/
+> **An AlphaZero-style neural network that learns to play Tic-Tac-Toe entirely in your browser.**
 
----
+No backend. No cloud. No API keys. Just your browser, TensorFlow.js, and a tiny neural network teaching itself to play perfect Tic-Tac-Toe through self-play and Monte Carlo Tree Search.
 
-## Tabla de Contenidos
+**Live Demo:** [https://feojeda.github.io/gato-neura/](https://feojeda.github.io/gato-neura/)
 
-- [Arquitectura del Sistema](#arquitectura-del-sistema)
-- [Modelo Neuronal](#modelo-neuronal)
-- [Motor de Juego](#motor-de-juego)
-- [Estrategia de Entrenamiento](#estrategia-de-entrenamiento)
-- [Visualización](#visualización)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Estructura de Archivos](#estructura-de-archivos)
-- [Desarrollo Local](#desarrollo-local)
-- [Deploy](#deploy)
-- [Tests](#tests)
-- [Limitaciones y Mejoras Futuras](#limitaciones-y-mejoras-futuras)
+**Non-technical explanation:** [docs/EXPLAINED.md](docs/EXPLAINED.md)
 
 ---
 
-## Arquitectura del Sistema
+## Table of Contents
 
-El proyecto es una aplicación **100% cliente-side** que corre completamente en el navegador sin backend. Consta de tres componentes principales:
-
-1. **Dashboard UI**: Interfaz responsive con tablero de juego, controles de entrenamiento y panel de métricas
-2. **Motor de Inferencia**: Red neuronal implementada con TensorFlow.js que evalúa posiciones y sugiere movimientos
-3. **Motor de Entrenamiento**: Algoritmo de self-play con curriculum learning (oponente aleatorio + self-play)
-
-### Flujo de Datos
-
-```
-Usuario (clic en celda) → app.js → game.js (actualiza tablero)
-                                    ↓
-                              model.js (predice)
-                                    ↓
-                              trainer.js (entrena)
-                                    ↓
-                         visualizer.js (renderiza pesos)
-                                    ↓
-                              ui.js (actualiza métricas)
-```
+- [What is this?](#what-is-this)
+- [Quick Start](#quick-start)
+- [How to Use](#how-to-use)
+- [Understanding the Metrics](#understanding-the-metrics)
+- [The Math Behind It](#the-math-behind-it)
+- [Architecture](#architecture)
+- [Training Phases](#training-phases)
+- [Multilingual Support](#multilingual-support)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Modelo Neuronal
+## What is this?
 
-### Arquitectura
+Gato Neura is a **self-contained, educational implementation** of the core ideas from DeepMind's AlphaZero, scaled down to Tic-Tac-Toe so it runs entirely in a web browser.
 
-```
-Input(9) → Dense(64, relu) → Dense(32, relu) → [Policy(9, softmax), Value(1, tanh)]
-```
+It demonstrates:
+- **Dual-head neural networks** (policy + value)
+- **Self-play reinforcement learning**
+- **Monte Carlo Tree Search (MCTS)** for move selection
+- **Curriculum learning** (random opponent → snapshot of itself)
+- **Real-time visualization** of weights, architecture, and training metrics
 
-**Capa de Entrada (9 neuronas):**
-Codificación del tablero como vector flat:
-- `+1`: ficha del jugador de la red
-- `-1`: ficha del oponente  
-- `0`: casilla vacía
-
-**Capas Ocultas (configurables):**
-- Default: `[64, 32]` neuronas con activación ReLU
-- Máximo 5 capas, máximo 128 neuronas por capa
-- El usuario puede agregar/eliminar capas antes de entrenar
-
-**Cabeza de Policy (9 neuronas, softmax):**
-Probabilidad de jugar en cada una de las 9 casillas. Se aplica una máscara legal que:
-1. Descarta casillas ocupadas (las pone en 0)
-2. Renormaliza las probabilidades restantes
-3. Si todas son 0 (caso extremo), usa distribución uniforme sobre casillas vacías
-
-**Cabeza de Value (1 neurona, tanh):**
-Evaluación de la posición actual en rango `[-1, +1]`:
-- `+1`: posición ganadora segura
-- `-1`: posición perdedora segura
-- `0`: empate o neutral
-
-### Codificación de Perspectiva
-
-La red **siempre juega como X** (`+1`). Cuando le toca jugar como O, el tablero se invierte antes de pasar por la red:
-
-```javascript
-// Si la red juega como O, invertimos el tablero
-const perspectBoard = currentPlayer === PLAYER_X ? board : invertBoard(board);
-// Ahora las fichas de la red aparecen como +1 y las del oponente como -1
-```
-
-Esto permite entrenar una sola red que aprende desde una perspectiva consistente.
+All in ~2,000 lines of vanilla JavaScript with **zero build step**. Open DevTools and read the exact code that runs.
 
 ---
 
-## Motor de Juego
-
-### Representación
-
-El tablero es un array de 9 enteros:
-```javascript
-const board = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // Vacío
-// Índices: 0 1 2
-//           3 4 5
-//           6 7 8
-```
-
-### Funciones Principales
-
-- `createBoard()`: Retorna tablero vacío
-- `getValidMoves(board)`: Retorna índices de casillas vacías
-- `makeMove(board, pos, player)`: Retorna **nuevo tablero** (inmutable, no muta el original)
-- `checkWinner(board)`: Evalúa 8 líneas posibles (3 filas + 3 columnas + 2 diagonales)
-- `isTerminal(board)`: Retorna `{over: bool, winner: int|null}`
-- `invertBoard(board)`: Intercambia X y O (para cambio de perspectiva)
-
-### Inmutabilidad
-
-Todas las funciones son **puras** — no mutan el estado, siempre retornan nuevos objetos. Esto es crítico para el entrenamiento, donde se almacenan múltiples estados de un mismo juego.
-
----
-
-## Estrategia de Entrenamiento
-
-### Curriculum Learning
-
-El entrenamiento usa una mezcla de dos estrategias:
-
-1. **vs Oponente Aleatorio (40% inicial + 50% alternado):**
-   - La red juega como X contra un oponente que elige movimientos completamente al azar
-   - Esto le da ejemplos de partidas ganadoras desde el inicio
-   - La red aprende a castigar errores obvios y a forzar victorias
-
-2. **Self-Play (50% alternado):**
-   - La red juega contra sí misma
-   - Ambos jugadores usan la misma red, pero con temperatura de exploración
-   - Temperatura decae linealmente de 1.0 (exploración) a 0.3 (explotación)
-
-### Loop de Entrenamiento
-
-```javascript
-for cada partida:
-    1. Jugar partida (vs random o self-play)
-    2. Almacenar (estado, policy, jugador) de cada turno
-    3. Al terminar: asignar reward final a todos los ejemplos
-       +1 si ganó, -1 si perdió, 0 si empate
-    4. Cada 10 partidas o cuando buffer >= batch_size:
-       - Entrenar batch con Adam optimizer
-       - Loss = policy_loss + value_loss
-```
-
-### Cálculo de Loss
-
-**Policy Loss:** Cross-entropy entre la distribución de probabilidad predicha y el target (movimientos que llevaron a victoria).
-
-Como `tf.losses.categoricalCrossentropy` no existe en TF.js, se implementa manualmente:
-
-```javascript
-const epsilon = 1e-7;
-const clippedPred = tf.clipByValue(pPred, epsilon, 1 - epsilon);
-const pLoss = tf.neg(tf.mean(tf.sum(tf.mul(policyYs, tf.log(clippedPred)), -1)));
-```
-
-**Value Loss:** Mean Squared Error entre el valor predicho y el resultado real:
-
-```javascript
-const vLoss = tf.losses.meanSquaredError(valueYs, vPred).mean();
-```
-
-**Loss Total:** `loss = pLoss + vLoss`
-
-### Temperatura
-
-La temperatura controla la exploración/explotación durante el self-play:
-
-```javascript
-const temperature = Math.max(0.3, 1.0 - (gameNumber / totalGames) * 0.7);
-```
-
-- Al inicio (temp=1.0): movimientos casi aleatorios, mucha exploración
-- Al final (temp=0.3): la red juega sus mejores movimientos, refinamiento
-
-Los movimientos se samplean con:
-
-```javascript
-probs[i] = Math.pow(validPolicy[i], 1 / temperature);
-```
-
-### Parámetros Configurables
-
-| Parámetro | Default | Rango |
-|-----------|---------|-------|
-| Partidas | 500 | 100 - 5000 |
-| Learning Rate | 0.0003 | 0.0001 - 0.1 |
-| Batch Size | 64 | 16 - 256 |
-| Capas Ocultas | [64, 32] | 1-5 capas, 1-128 neuronas |
-
----
-
-## Visualización
-
-### Grafo de Nodos (SVG)
-
-Muestra la arquitectura de la red como un grafo dirigido:
-- **Nodos**: Círculos representando neuronas (máximo 12 por capa, con indicador "+N" si hay más)
-- **Conexiones**: Líneas entre capas adyacentes, coloreadas según el peso:
-  - Azul: peso positivo
-  - Rojo: peso negativo
-  - Intensidad: magnitud del peso
-- **Máximo 50 conexiones** para no saturar la visualización
-
-### Heatmap de Pesos
-
-Al hacer clic en un nodo, muestra una matriz de colores con los pesos de la conexión. Si la matriz es muy grande (>2500 celdas), muestra un mensaje indicando que es muy grande para visualizar.
-
-### Métricas en Tiempo Real
-
-Durante el entrenamiento se muestra:
-- Progreso de partidas (barra + contador)
-- Win Rate (% de victorias de la red)
-- Policy Loss (cross-entropy)
-- Value Loss (MSE)
-
-La visualización se actualiza cada 50 partidas para no relentizar el entrenamiento.
-
----
-
-## Stack Tecnológico
-
-- **HTML5 + CSS3**: Layout responsive con CSS Grid
-- **JavaScript ES Modules**: Sin bundler, sin transpilación
-- **TensorFlow.js 4.22.0**: Red neuronal y entrenamiento (cargado desde CDN)
-- **SVG**: Visualización del modelo
-- **GitHub Actions**: Deploy automático a GitHub Pages
-- **Playwright**: Tests de integración headless
-
-### Por qué sin build step
-
-El objetivo es que el código sea completamente legible y modificable por cualquiera que abra DevTools. Sin webpack, sin npm, sin pasos de compilación. Todo el código fuente es exactamente lo que corre en el navegador.
-
----
-
-## Estructura de Archivos
-
-```
-gato-neura/
-├── public/                    # Archivos servidos (GitHub Pages)
-│   ├── index.html            # Página principal con dashboard
-│   ├── css/
-│   │   └── styles.css        # Estilos responsive
-│   └── js/
-│       ├── app.js            # Orquestador principal
-│       ├── game.js           # Motor de juego (lógica pura)
-│       ├── model.js          # Creación y gestión del modelo TF.js
-│       ├── trainer.js        # Self-play + loop de entrenamiento
-│       ├── visualizer.js     # Renderizado SVG del modelo
-│       └── ui.js             # Bindings DOM y métricas
-├── .github/
-│   └── workflows/
-│       └── deploy.yml        # CI/CD para GitHub Pages
-├── docs/
-│   └── superpowers/
-│       ├── specs/            # Especificación de diseño
-│       └── plans/            # Plan de implementación
-├── test-game.mjs             # Tests del motor de juego (Node.js)
-├── test-tf-api.mjs           # Tests de integración TF.js (Playwright)
-├── debug-training.mjs        # Debug del entrenamiento (Playwright)
-├── README.md                 # Este archivo
-└── .gitignore
-```
-
----
-
-## Desarrollo Local
-
-### Requisitos
-
-- Node.js 18+ (solo para tests)
-- Navegador moderno con soporte ES Modules
-
-### Ejecutar
-
-Servir la carpeta `public/` con cualquier servidor estático:
+## Quick Start
 
 ```bash
-# Con Python
-python3 -m http.server 8080 --directory public
+# Clone
+git clone https://github.com/feojeda/gato-neura.git
+cd gato-neura
 
-# Con Node.js
+# Serve locally (any static server works)
+python3 -m http.server 8080 --directory public
+# or
 npx serve public
 
-# Con PHP
-php -S localhost:8080 -t public
+# Open http://localhost:8080
 ```
 
-Luego abrir http://localhost:8080
+No `npm install`. No bundler. No compilation.
 
-### Tests
+---
 
-**Motor de juego (rápido, sin navegador):**
-```bash
-node test-game.mjs
+## How to Use
+
+The UI is divided into three panels:
+
+### 1. Model Panel (left)
+Shows a live SVG graph of the neural network architecture. Click any node to see a heatmap of its incoming weights.
+
+### 2. Board Panel (center)
+The game itself. Choose who starts, set the play temperature, and play against the trained network.
+
+- **Play Temperature**: `0.0` = always best move (greedy). `>1.0` = creative, sometimes random.
+- **Policy Hints**: During the network's turn, percentages appear on each empty cell showing the network's confidence.
+
+### 3. Controls Panel (right)
+
+#### Model Architecture
+Add/remove hidden layers before training. Default: `[64, 32]`.
+
+> **Tip:** For Tic-Tac-Toe, 2-3 layers of 32-64 neurons is plenty. More layers won't help and may slow convergence.
+
+#### Training Settings
+
+| Setting | Default | What it does |
+|---------|---------|-------------|
+| **Games** | 500 | Total self-play games to generate |
+| **Learning Rate** | 0.0003 | Step size for gradient descent |
+| **Batch Size** | 64 | Training examples per update |
+| **MCTS Simulations** | 50 | Simulations per move (0 = disabled) |
+| **Incremental** | off | Add to existing model or start fresh |
+
+#### Training Button
+Hit **Train** and watch the metrics update in real time. Training pauses the game UI.
+
+---
+
+## Understanding the Metrics
+
+### Win Rate
+Percentage of games the network won during the current training session.
+
+| Badge | Meaning |
+|-------|---------|
+| 🟢 Excellent (>80%) | Dominates the current opponent |
+| 🔵 Good (60-80%) | Winning majority, still learning |
+| 🟡 Fair (40-60%) | Not dominant yet |
+| 🔴 Poor (<40%) | Losing more than winning |
+
+> Training win rate is against a **mixed opponent** (random + older snapshot). The real test is **Quality vs Random**.
+
+### Policy Loss
+How well the network predicts *which* move to play.
+
+Lower is better. With 9 cells, pure random guessing has a baseline loss of:
+
+$$\mathcal{L}_{\text{random}} = -\log\frac{1}{9} = 2.197$$
+
+A loss of 2.1 means you're only ~5% better than a dice roll.
+
+| Badge | Threshold |
+|-------|-----------|
+| 🟢 Excellent | < 1.0 |
+| 🔵 Good | 1.0 - 1.5 |
+| 🟡 Fair | 1.5 - 2.0 |
+| 🔴 Poor | > 2.0 |
+
+### Value Loss
+How well the network evaluates whether a position is winning (+1), losing (-1), or drawn (0).
+
+This is Mean Squared Error (MSE):
+
+$$\mathcal{L}_V = \frac{1}{N}\sum_{i=1}^{N}(v_i^{\text{target}} - v_i^{\text{pred}})^2$$
+
+| Badge | Threshold |
+|-------|-----------|
+| 🟢 Excellent | < 0.3 |
+| 🔵 Good | 0.3 - 0.6 |
+| 🟡 Fair | 0.6 - 1.0 |
+| 🔴 Poor | > 1.0 |
+
+> Low value loss ≠ good play. The network might evaluate well but not know *what* to move.
+
+### Quality vs Random
+After training, the network plays **100 greedy games** against a purely random opponent. This is the ground-truth metric.
+
+| Result | Interpretation |
+|--------|----------------|
+| >90% | Near-perfect play. Beats any casual human. |
+| 70-90% | Strong, occasional mistakes. |
+| 50-70% | Knows basics, misses tactics. |
+| <50% | Worse than random. Needs more training or bigger network. |
+
+### Loss Chart
+Real-time plot of policy loss (blue) and value loss (red) over the last 100 training batches.
+
+---
+
+## The Math Behind It
+
+### Neural Network Architecture
+
+The network is a **multi-layer perceptron** with two output heads:
+
+$$
+\mathbf{x} \in \mathbb{R}^9 \xrightarrow{\text{Dense}} \mathbf{h}_1 \xrightarrow{\text{ReLU}} \mathbf{h}_2 \xrightarrow{\text{ReLU}} \begin{cases} \mathbf{p} \in \mathbb{R}^9 & \text{(Policy)} \\ v \in \mathbb{R} & \text{(Value)} \end{cases}
+$$
+
+**Input encoding:**
+- $+1$: network's piece
+- $-1$: opponent's piece
+- $0$: empty
+
+**Perspective invariance:** The network always sees itself as $+1$. If playing as O, the board is inverted before feeding to the network.
+
+### Policy Head
+
+Outputs a probability distribution over the 9 cells using softmax:
+
+$$p_i = \frac{e^{z_i}}{\sum_{j} e^{z_j}}$$
+
+Illegal moves (occupied cells) are masked to probability 0, then the distribution is renormalized.
+
+### Value Head
+
+A single neuron with $\tanh$ activation, giving a scalar in $[-1, +1]$:
+
+$$v = \tanh(w^T h + b)$$
+
+### Policy Loss: Cross-Entropy
+
+The network is trained to match a target policy $\pi$ (from MCTS visit counts):
+
+$$\mathcal{L}_P = -\frac{1}{N}\sum_{i=1}^{N}\sum_{j=1}^{9} \pi_{ij} \log \hat{p}_{ij}$$
+
+Clipped for numerical stability ($\varepsilon = 10^{-7}$):
+
+$$\hat{p}_{ij} = \text{clip}(p_{ij}, \varepsilon, 1-\varepsilon)$$
+
+### Value Loss: Mean Squared Error
+
+$$\mathcal{L}_V = \frac{1}{N}\sum_{i=1}^{N}(z_i - v_i)^2$$
+
+where $z_i \in \{-1, 0, +1\}$ is the game outcome from the current player's perspective.
+
+### Total Loss
+
+$$\mathcal{L} = \mathcal{L}_P + \mathcal{L}_V$$
+
+### Temperature Sampling
+
+During training, moves are sampled with temperature $T$ to balance exploration vs exploitation:
+
+$$\tilde{p}_i = \frac{p_i^{1/T}}{\sum_j p_j^{1/T}}$$
+
+- $T = 1.0$: sample from the raw policy (high exploration)
+- $T \to 0$: always pick the highest probability (pure exploitation)
+- In this implementation, $T$ decays linearly from 1.0 to 0.3 over training.
+
+### Monte Carlo Tree Search (MCTS)
+
+After ~50 games, MCTS activates. For each move, the network runs $N$ simulations:
+
+1. **Selection**: Traverse the game tree using UCB1 score:
+
+$$U(s, a) = Q(s, a) + c_{puct} \cdot P(a|s) \cdot \frac{\sqrt{N(s)}}{1 + N(s, a)}$$
+
+2. **Expansion**: When reaching an unvisited node, expand it using the network's policy output.
+
+3. **Evaluation**: Use the network's value estimate for leaf nodes.
+
+4. **Backup**: Propagate the result back up the tree, flipping the sign at each level (zero-sum game).
+
+5. **Move selection**: Play proportional to visit counts.
+
+Each simulation requires one forward pass through the network, so 50 simulations ≈ 50× slower than greedy play.
+
+### Gradient Clipping
+
+To prevent exploding gradients, gradients are clipped to a maximum norm:
+
+$$\mathbf{g} \leftarrow \frac{\mathbf{g}}{\max(1, \|\mathbf{g}\|_2 / g_{\max})}$$
+
+In this implementation, $g_{\max} = 1.0$.
+
+---
+
+## Architecture
+
+```
+public/
+├── index.html              # Main dashboard
+├── css/styles.css          # Responsive layout
+└── js/
+    ├── app.js              # Orchestrator, game loop
+    ├── game.js             # Pure game logic (immutable)
+    ├── model.js            # TF.js model creation / inference
+    ├── trainer.js          # Self-play + MCTS + training loop
+    ├── ui.js               # DOM bindings, metrics, i18n
+    ├── visualizer.js       # SVG graph rendering
+    ├── i18n.js             # Lightweight i18n engine
+    └── translations/       # en, es, zh, ja
+        ├── en.js
+        ├── es.js
+        ├── zh.js
+        └── ja.js
 ```
 
-**Integración completa (con Playwright):**
-```bash
-npm install --no-save @playwright/test
-npx playwright install chromium
-node test-tf-api.mjs
-```
+**Design philosophy:** Zero build step. What you see in DevTools is exactly what runs. No webpack, no npm, no transpilation.
 
 ---
 
-## Deploy
+## Training Phases
 
-Cada push a la rama `develop` dispara un workflow de GitHub Actions que:
+The training curriculum has three phases:
 
-1. Sube la carpeta `public/` como artifact
-2. Deploya a GitHub Pages automáticamente
+| Phase | Games | Opponent | MCTS | Purpose |
+|-------|-------|----------|------|---------|
+| 1 | 0-50 | Random | No | Learn basic winning patterns |
+| 2 | 50-100 | Random + Snapshot | Yes | Learn tactics via tree search |
+| 3 | 100+ | Snapshot (self) | Yes | Refine against past self |
 
-La URL del sitio es: `https://feojeda.github.io/gato-neura/`
-
-**Nota sobre cache:** GitHub Pages puede cachear archivos estáticos agresivamente. Si haces cambios y no ves reflejados:
-- Forzar reload: `Ctrl + F5` (o `Cmd + Shift + R`)
-- Usar pestaña de incógnito
-- Agregar `?v=N` a la URL
+A **snapshot** of the model is taken every 100 games. This older version becomes the opponent, forcing the current model to improve against a stronger foe.
 
 ---
 
-## Tests
+## Multilingual Support
 
-### test-game.mjs
+Gato Neura supports 4 languages out of the box:
 
-16 tests unitarios para el motor de juego:
-- Creación de tablero
-- Movimientos válidos
-- Inmutabilidad
-- Detección de ganador (filas, columnas, diagonales)
-- Estados terminales (victoria, empate, en progreso)
-- Inversión de tablero
+- 🇺🇸 **English** (default)
+- 🇪🇸 **Español**
+- 🇨🇳 **中文 (Simplified Chinese)**
+- 🇯🇵 **日本語 (Japanese)**
 
-### test-tf-api.mjs
-
-Tests de integración con Playwright:
-- Verifica disponibilidad de la API de TensorFlow.js
-- Entrena 100 partidas y verifica que no haya errores
-- Verifica que las losses sean valores numéricos finitos
-
-### Limitaciones de Testing
-
-El mayor desafío fue probar `trainer.js` porque:
-1. Requiere TensorFlow.js (solo corre en navegador, no en Node.js puro)
-2. El entrenamiento es asíncrono y no determinista
-3. Los pesos iniciales son aleatorios, haciendo difícil asserts exactos
-
-La solución fue usar Playwright para correr los tests en un navegador headless real, capturando errores de consola y verificando métricas.
+Switch languages via the dropdown in the header. Your preference is saved to `localStorage`.
 
 ---
 
-## Limitaciones y Mejoras Futuras
+## Contributing
 
-### Limitaciones Actuales
+This project is intentionally small and readable. Contributions are welcome!
 
-1. **Sin WebGL en headless:** Los tests de Playwright corren sin GPU, TF.js usa CPU (más lento)
-2. **Sin MCTS:** AlphaZero real usa Monte Carlo Tree Search para explorar el árbol de juego. Esta implementación usa solo la policy head con temperatura.
-3. **Sin memoria de replay:** Los ejemplos se descartan inmediatamente después de entrenar el batch. Un buffer de experiencia circular mejoraría estabilidad.
-4. **Red pequeña:** Para tic-tac-toe es suficiente, pero no escalaría a juegos más complejos.
+### Ideas we'd love help with
 
-### Mejoras Posibles
+- [ ] **Web Workers**: Move training off the main thread so the UI stays responsive
+- [ ] **Save/Load models**: Export trained weights (JSON or localStorage)
+- [ ] **Better visualization**: Policy heatmaps per position, activation maps
+- [ ] **More games**: Connect Four, Checkers, or Hex using the same engine
+- [ ] **Manual MCTS inspection**: Click "Think" and see the search tree
+- [ ] **ELO estimation**: Track estimated rating over time
+- [ ] **More languages**: Any language you speak
+- [ ] **Tests**: More Playwright coverage for edge cases
 
-1. **Implementar desde cero:** Reemplazar TensorFlow.js con una implementación manual de backpropagation para máximo valor educativo
-2. **Web Workers:** Mover el entrenamiento a un worker para no bloquear la UI
-3. **Guardar/Cargar modelos:** Exportar/importar pesos entrenados (localStorage o descarga)
-4. **MCTS:** Agregar búsqueda en árbol para movimientos de mayor calidad
-5. **Replay Buffer:** Mantener los últimos N ejemplos y samplear batches aleatorios
-6. **Más métricas:** Win rate vs oponente aleatorio, ELO estimado, heatmap de política por posición
+### How to contribute
+
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/my-idea`
+3. Make your changes
+4. Run tests: `node test-integration.mjs`
+5. Open a Pull Request against `develop`
+
+No CLA, no bureaucracy. If it improves the project, we'll merge it.
+
+**Questions or ideas?** Open an [Issue](https://github.com/feojeda/gato-neura/issues) or start a [Discussion](https://github.com/feojeda/gato-neura/discussions).
 
 ---
 
-## Créditos
+## License
 
-Inspirado en:
-- **AlphaGo / AlphaZero** (DeepMind): Arquitectura de red dual (policy + value) y self-play
-- **TensorFlow.js**: Motor de inferencia y entrenamiento en el navegador
-
----
-
-## Licencia
-
-MIT
+MIT © [Francisco Ojeda](https://github.com/feojeda)
