@@ -32,11 +32,6 @@ export function createModel(hiddenLayers = [64, 32]) {
         name: 'gato_neura'
     });
 
-    model.compile({
-        optimizer: tf.train.adam(0.001),
-        loss: ['categoricalCrossentropy', 'meanSquaredError']
-    });
-
     return model;
 }
 
@@ -82,6 +77,22 @@ export function getModelInfo(model) {
         if (cfg.units) layerSizes.push(cfg.units);
     }
     return layerSizes;
+}
+
+export function getParameterCount(hiddenLayers = [64, 32]) {
+    // Architecture: Input(9) -> hidden1 -> hidden2 -> ... -> Policy(9) + Value(1)
+    const inputSize = 9;
+    const policySize = 9;
+    const valueSize = 1;
+    let total = 0;
+    let prev = inputSize;
+    for (const neurons of hiddenLayers) {
+        total += prev * neurons + neurons; // weights + bias
+        prev = neurons;
+    }
+    total += prev * policySize + policySize; // policy head
+    total += prev * valueSize + valueSize;   // value head
+    return total;
 }
 
 export function disposeModel(model) {

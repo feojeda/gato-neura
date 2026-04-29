@@ -1,0 +1,11 @@
+{
+  "name": "gato-neura-tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node test-integration.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.0"
+  }
+}

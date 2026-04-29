@@ -1,33 +1,59 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gato Neura — Red Neuronal para Tic-Tac-Toe</title>
-    <link rel="stylesheet" href="css/styles.css?v=2">
+    <title>Gato Neura — Neural Network for Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="css/styles.css?v=3">
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 </head>
 <body>
     <header>
         <h1>Gato Neura</h1>
-        <p>Red neuronal estilo AlphaZero para Tic-Tac-Toe</p>
+        <p data-i18n="app.subtitle">AlphaZero-style neural network for Tic-Tac-Toe</p>
+        <div class="header-controls">
+            <button id="btn-info" class="btn-info" data-i18n="app.howItWorks">How does this work?</button>
+            <label class="lang-selector">
+                <select id="lang-select">
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="zh">中文</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </label>
+        </div>
     </header>
     <main class="dashboard">
         <section class="panel panel-model" id="panel-model">
-            <h2>Modelo</h2>
+            <h2 data-i18n="panel.model">Model</h2>
+            <div id="model-params" class="model-params" data-i18n="model.params">Parameters: —</div>
             <div id="model-viz"></div>
             <div id="heatmap-container"></div>
             <div class="legend">
-                <span class="legend-neg">Negativo</span>
-                <span class="legend-zero">Cero</span>
-                <span class="legend-pos">Positivo</span>
+                <span class="legend-neg" data-i18n="model.legend.negative">Negative</span>
+                <span class="legend-zero" data-i18n="model.legend.zero">Zero</span>
+                <span class="legend-pos" data-i18n="model.legend.positive">Positive</span>
             </div>
         </section>
         <section class="panel panel-board" id="panel-board">
-            <h2>Tablero</h2>
+            <h2 data-i18n="panel.board">Board</h2>
             <div class="game-info">
-                <span id="turn-indicator">Tu turno (X)</span>
-                <span id="confidence-display">Confianza: —</span>
+                <span id="turn-indicator" data-i18n="board.yourTurnX">Your turn (X)</span>
+                <span id="confidence-display">Confidence: —</span>
+            </div>
+            <div class="starting-player">
+                <label><span data-i18n="board.starts">Starts:</span>
+                    <select id="starting-player">
+                        <option value="player" data-i18n="board.playerStarts">Player (you are X)</option>
+                        <option value="network" data-i18n="board.networkStarts">Network (you are O)</option>
+                    </select>
+                </label>
+            </div>
+            <div class="inference-temp">
+                <label><span data-i18n="board.playTemp">Play temperature:</span>
+                    <input type="range" id="input-inference-temp" min="0" max="2" step="0.1" value="0">
+                    <span id="inference-temp-value">0.0</span>
+                </label>
             </div>
             <div class="board" id="board">
                 <div class="cell" data-pos="0"></div>
@@ -41,42 +67,84 @@
                 <div class="cell" data-pos="8"></div>
             </div>
             <div class="board-controls">
-                <button id="btn-new-game">Nueva Partida</button>
-                <button id="btn-reset">Reiniciar Todo</button>
+                <button id="btn-new-game" data-i18n="board.newGame">New Game</button>
+                <button id="btn-reset" data-i18n="board.resetAll">Reset All</button>
+                <button id="btn-reset-model" data-i18n="board.resetModel">Reset Model</button>
             </div>
             <div class="scoreboard" id="scoreboard">
-                <span class="score score-player">Jugador: <strong id="score-player">0</strong></span>
-                <span class="score score-draw">Empates: <strong id="score-draw">0</strong></span>
-                <span class="score score-network">Red: <strong id="score-network">0</strong></span>
+                <span class="score score-player"><span data-i18n="board.player">Player</span>: <strong id="score-player">0</strong></span>
+                <span class="score score-draw"><span data-i18n="board.draws">Draws</span>: <strong id="score-draw">0</strong></span>
+                <span class="score score-network"><span data-i18n="board.network">Network</span>: <strong id="score-network">0</strong></span>
             </div>
         </section>
         <section class="panel panel-controls" id="panel-controls">
-            <h2>Controles</h2>
+            <h2 data-i18n="panel.controls">Controls</h2>
             <div class="config-section">
-                <h3>Arquitectura del Modelo</h3>
+                <h3 data-i18n="controls.modelArch">Model Architecture</h3>
                 <div id="layers-config"></div>
-                <button id="btn-add-layer">+ Capa</button>
+                <button id="btn-add-layer" data-i18n="controls.addLayer">+ Layer</button>
             </div>
             <div class="config-section">
-                <h3>Entrenamiento</h3>
-                <label>Partidas: <input type="range" id="input-games" min="100" max="5000" step="100" value="500"><span id="games-value">500</span></label>
-                <label>Learning Rate: <input type="number" id="input-lr" value="0.0003" step="0.0001" min="0.0001" max="0.1"></label>
-                <label>Batch Size: <input type="number" id="input-batch" value="64" step="16" min="16" max="256"></label>
+                <h3 data-i18n="controls.training">Training</h3>
+                <label><span data-i18n="controls.games">Games:</span> <input type="range" id="input-games" min="100" max="5000" step="100" value="500"><span id="games-value">500</span></label>
+                <label><span data-i18n="controls.learningRate">Learning Rate:</span> <input type="number" id="input-lr" value="0.0003" step="0.0001" min="0.0001" max="0.1"></label>
+                <label><span data-i18n="controls.batchSize">Batch Size:</span> <input type="number" id="input-batch" value="64" step="16" min="16" max="256"></label>
+                <label><span data-i18n="controls.mctsSims">MCTS Simulations:</span> <input type="range" id="input-mcts" min="0" max="200" step="1" value="50"><span id="mcts-value">50</span>
+                    <button class="info-icon" data-metric="mcts" data-i18n-title="tooltip.details">ⓘ</button>
+                </label>
+                <label class="incremental-label"><input type="checkbox" id="input-incremental"> <span data-i18n="controls.incremental">Incremental training (add to current model)</span></label>
             </div>
             <div class="train-controls">
-                <button id="btn-train" class="btn-primary">Entrenar</button>
-                <button id="btn-stop-train" disabled>Detener</button>
+                <button id="btn-train" class="btn-primary" data-i18n="controls.train">Train</button>
+                <button id="btn-stop-train" disabled data-i18n="controls.stop">Stop</button>
             </div>
             <div class="metrics" id="metrics">
-                <h3>Métricas</h3>
+                <h3 data-i18n="controls.metrics">Metrics</h3>
+                <div class="backend-indicator" id="backend-indicator" data-i18n="controls.detecting">Detecting...</div>
                 <div class="progress-bar"><div class="progress-fill" id="train-progress"></div></div>
-                <div class="metric"><span>Partidas:</span> <span id="metric-games">0/0</span></div>
-                <div class="metric"><span>Win Rate:</span> <span id="metric-winrate">—</span></div>
-                <div class="metric"><span>Policy Loss:</span> <span id="metric-ploss">—</span></div>
-                <div class="metric"><span>Value Loss:</span> <span id="metric-vloss">—</span></div>
+                <div class="metric"><span data-i18n="metric.games">Games:</span> <span id="metric-games">0/0</span></div>
+                <div class="loss-chart-container">
+                    <canvas id="loss-chart" width="300" height="150"></canvas>
+                </div>
+                <div class="metric">
+                    <span data-i18n="metric.winRate">Win Rate:</span> <span id="metric-winrate">—</span>
+                    <span class="metric-status" id="metric-winrate-status"></span>
+                    <button class="info-icon" data-metric="winrate" data-i18n-title="tooltip.details">ⓘ</button>
+                </div>
+                <div class="metric">
+                    <span data-i18n="metric.policyLoss">Policy Loss:</span> <span id="metric-ploss">—</span>
+                    <span class="metric-status" id="metric-ploss-status"></span>
+                    <button class="info-icon" data-metric="ploss" data-i18n-title="tooltip.details">ⓘ</button>
+                </div>
+                <div class="metric">
+                    <span data-i18n="metric.valueLoss">Value Loss:</span> <span id="metric-vloss">—</span>
+                    <span class="metric-status" id="metric-vloss-status"></span>
+                    <button class="info-icon" data-metric="vloss" data-i18n-title="tooltip.details">ⓘ</button>
+                </div>
+                <div class="metric">
+                    <span data-i18n="metric.quality">Quality vs Random:</span> <span id="metric-quality">—</span>
+                    <span class="metric-status" id="metric-quality-status"></span>
+                    <button class="info-icon" data-metric="quality" data-i18n-title="tooltip.details">ⓘ</button>
+                </div>
             </div>
         </section>
     </main>
-    <script type="module" src="js/app.js?v=2"></script>
+    <!-- Metric Detail Modal -->
+    <div id="metric-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="metric-modal-close">&times;</button>
+            <h2 id="metric-modal-title" data-i18n="modal.metricTitle">Metric</h2>
+            <div class="modal-body" id="metric-modal-body"></div>
+        </div>
+    </div>
+
+    <div id="info-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 id="info-modal-title" data-i18n="info.title">How does Gato Neura work?</h2>
+            <div class="modal-body" id="info-modal-body"></div>
+        </div>
+    </div>
+    <script type="module" src="js/app.js?v=5"></script>
 </body>
 </html>
