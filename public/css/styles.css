@@ -111,6 +111,18 @@ header p { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
 .score-player strong { color: var(--accent); }
 .score-network strong { color: var(--positive); }
 
+.model-info {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.trained-games strong {
+    color: var(--text);
+}
+
 /* Controls */
 .config-section {
     margin-bottom: 1rem;

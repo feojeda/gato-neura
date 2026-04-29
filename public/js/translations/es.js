@@ -43,7 +43,8 @@ export default {
         loadModel: 'Cargar Modelo',
         player: 'Jugador',
         draws: 'Empates',
-        network: 'Red'
+        network: 'Red',
+        trainedGames: 'Partidas entrenadas'
     },
     controls: {
         modelArch: 'Arquitectura del Modelo',

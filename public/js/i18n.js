@@ -71,11 +71,32 @@ export function bindDOM(root = document) {
     });
 }
 
-/** Initialize: load saved locale, set html lang, bind DOM */
+/** Detect browser language and map to supported locale */
+function detectBrowserLocale() {
+    const supported = Object.keys(translations);
+    const browserLangs = [
+        navigator.language,
+        ...(navigator.languages || [])
+    ].filter(Boolean);
+
+    for (const lang of browserLangs) {
+        const base = lang.split('-')[0].toLowerCase();
+        if (supported.includes(base)) return base;
+        // Handle zh-CN/zh-TW -> zh
+        if (base === 'zh') return 'zh';
+    }
+    return 'en';
+}
+
+/** Initialize: load saved locale, detect browser lang, set html lang, bind DOM */
 export function init() {
     let saved;
     try { saved = localStorage.getItem('gato-neura-lang'); } catch (_) {}
-    if (saved && translations[saved]) currentLocale = saved;
+    if (saved && translations[saved]) {
+        currentLocale = saved;
+    } else {
+        currentLocale = detectBrowserLocale();
+    }
     document.documentElement.lang = currentLocale;
     bindDOM();
 }

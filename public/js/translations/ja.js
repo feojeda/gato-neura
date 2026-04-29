@@ -43,7 +43,8 @@ export default {
         loadModel: 'モデルを読み込む',
         player: 'プレイヤー',
         draws: '引き分け',
-        network: 'ネットワーク'
+        network: 'ネットワーク',
+        trainedGames: '学習したゲーム数'
     },
     controls: {
         modelArch: 'モデルアーキテクチャ',

@@ -43,7 +43,8 @@ export default {
         loadModel: 'Load Model',
         player: 'Player',
         draws: 'Draws',
-        network: 'Network'
+        network: 'Network',
+        trainedGames: 'Trained games'
     },
     controls: {
         modelArch: 'Model Architecture',

@@ -43,7 +43,8 @@ export default {
         loadModel: '加载模型',
         player: '玩家',
         draws: '平局',
-        network: '网络'
+        network: '网络',
+        trainedGames: '训练局数'
     },
     controls: {
         modelArch: '模型架构',

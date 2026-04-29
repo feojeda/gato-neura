@@ -55,6 +55,11 @@ export function updateScoreboard(scores) {
     if (networkEl) networkEl.textContent = scores.network;
 }
 
+export function updateTrainedGames(count) {
+    const el = document.getElementById('trained-games-count');
+    if (el) el.textContent = count.toLocaleString();
+}
+
 export function initLayersConfig(defaultLayers = [64, 32]) {
     const container = document.getElementById('layers-config');
     if (!container) return;
