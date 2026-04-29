@@ -137,6 +137,9 @@ export async function trainLoop(model, config, callbacks) {
 
     const optimizer = tf.train.adam(lr);
     let totalGames = 0;
+    let wins = 0;
+    let losses = 0;
+    let draws = 0;
     const allExamples = [];
 
     try {
@@ -152,10 +155,18 @@ export async function trainLoop(model, config, callbacks) {
             allExamples.push(...examples);
             totalGames++;
 
+            // Track result from last example
+            const lastValue = examples[examples.length - 1].value;
+            if (lastValue > 0) wins++;
+            else if (lastValue < 0) losses++;
+            else draws++;
+
             if (onGameComplete) {
                 onGameComplete({
                     gamesPlayed: totalGames,
-                    totalGames: numGames
+                    totalGames: numGames,
+                    winRate: wins / totalGames,
+                    wins, losses, draws
                 });
             }
 
