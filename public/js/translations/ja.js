@@ -54,6 +54,7 @@ export default {
         batchSize: 'バッチサイズ:',
         mctsSims: 'MCTSシミュレーション数:',
         incremental: '増分学習（現在のモデルに追加）',
+        useMinimax: '完璧な対戦相手を使用（minimax）',
         train: '学習',
         stop: '停止',
         metrics: '指標',

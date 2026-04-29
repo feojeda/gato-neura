@@ -54,6 +54,7 @@ export default {
         batchSize: '批量大小:',
         mctsSims: 'MCTS模拟次数:',
         incremental: '增量训练（添加到当前模型）',
+        useMinimax: '使用完美对手（minimax）',
         train: '训练',
         stop: '停止',
         metrics: '指标',

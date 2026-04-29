@@ -54,6 +54,7 @@ export default {
         batchSize: 'Batch Size:',
         mctsSims: 'MCTS Simulations:',
         incremental: 'Incremental training (add to current model)',
+        useMinimax: 'Use perfect opponent (minimax)',
         train: 'Train',
         stop: 'Stop',
         metrics: 'Metrics',

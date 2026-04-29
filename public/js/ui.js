@@ -130,11 +130,14 @@ export function getTrainingConfig() {
     const lr = parseFloat(document.getElementById('input-lr')?.value);
     const batchSize = parseInt(document.getElementById('input-batch')?.value, 10);
     const mctsSims = parseInt(document.getElementById('input-mcts')?.value, 10);
+    const useMinimax = document.getElementById('input-minimax')?.checked ?? false;
     return {
         numGames: Number.isNaN(numGames) ? 500 : Math.max(1, numGames),
         lr: Number.isNaN(lr) ? 0.001 : Math.max(1e-6, lr),
         batchSize: Number.isNaN(batchSize) ? 64 : Math.max(1, batchSize),
-        mctsSims: Number.isNaN(mctsSims) ? 50 : Math.max(0, mctsSims)
+        mctsSims: Number.isNaN(mctsSims) ? 50 : Math.max(0, mctsSims),
+        useMinimax,
+        minimaxRatio: 0.5
     };
 }
 

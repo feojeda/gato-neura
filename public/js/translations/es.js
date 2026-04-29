@@ -54,6 +54,7 @@ export default {
         batchSize: 'Batch Size:',
         mctsSims: 'Simulaciones MCTS:',
         incremental: 'Entrenamiento incremental (sumar al modelo actual)',
+        useMinimax: 'Usar oponente perfecto (minimax)',
         train: 'Entrenar',
         stop: 'Detener',
         metrics: 'Métricas',

@@ -1,6 +1,6 @@
 import {
     createBoard, getValidMoves, makeMove,
-    isTerminal, invertBoard,
+    isTerminal, invertBoard, getBestMove,
     PLAYER_X, PLAYER_O
 } from './game.js';
 import { predict, createModel, getModelInfo } from './model.js';
@@ -160,7 +160,7 @@ function buildOneHotPolicy(move) {
     return policy;
 }
 
-async function playOneGameVsRandomAsX(model, temperature, opponentModel = null, useMCTS = false, mctsSims = 50) {
+async function playOneGameVsRandomAsX(model, temperature, opponentModel = null, useMCTS = false, mctsSims = 50, opponentType = 'random') {
     const examples = [];
     let board = createBoard();
 
@@ -201,9 +201,11 @@ async function playOneGameVsRandomAsX(model, temperature, opponentModel = null, 
             }));
         }
 
-        // Opponent's turn (O): random or snapshot model
+        // Opponent's turn (O): random, snapshot, or minimax
         let oppMove;
-        if (opponentModel) {
+        if (opponentType === 'minimax') {
+            oppMove = getBestMove(board, PLAYER_O);
+        } else if (opponentModel) {
             const oppBoard = invertBoard(board);
             const { move: m } = await chooseBestMove(opponentModel, oppBoard, 0.3);
             oppMove = m;
@@ -225,14 +227,16 @@ async function playOneGameVsRandomAsX(model, temperature, opponentModel = null, 
     }
 }
 
-async function playOneGameVsRandomAsO(model, temperature, opponentModel = null, useMCTS = false, mctsSims = 50) {
+async function playOneGameVsRandomAsO(model, temperature, opponentModel = null, useMCTS = false, mctsSims = 50, opponentType = 'random') {
     const examples = [];
     let board = createBoard();
 
     while (true) {
-        // Opponent's turn (X): random or snapshot model
+        // Opponent's turn (X): random, snapshot, or minimax
         let oppMove;
-        if (opponentModel) {
+        if (opponentType === 'minimax') {
+            oppMove = getBestMove(board, PLAYER_X);
+        } else if (opponentModel) {
             const { move: m } = await chooseBestMove(opponentModel, board, 0.3);
             oppMove = m;
         } else {
@@ -293,7 +297,7 @@ async function playOneGameVsRandomAsO(model, temperature, opponentModel = null, 
 /* ── Training loop ─────────────────────────────────────────────── */
 
 export async function trainLoop(model, config, callbacks, previousGames = 0, existingReplayBuffer = null) {
-    const { numGames, batchSize, lr, mctsSims = 50 } = config;
+    const { numGames, batchSize, lr, mctsSims = 50, useMinimax = false, minimaxRatio = 0.5 } = config;
     if (!numGames || numGames <= 0) throw new Error('config.numGames must be > 0');
     if (!batchSize || batchSize <= 0) throw new Error('config.batchSize must be > 0');
     if (!lr || lr <= 0) throw new Error('config.lr must be > 0');
@@ -331,17 +335,19 @@ export async function trainLoop(model, config, callbacks, previousGames = 0, exi
                 console.log(`Snapshot updated at game ${absoluteGame}`);
             }
 
-            // Use random opponent for first 100 games, then mix with snapshot
+            // Determine opponent type
             const useRandomOpponent = absoluteGame < snapshotInterval || g % 2 === 0;
             const hasSnapshot = opponentModel !== null;
             const useMCTS = mctsSims > 0 && absoluteGame >= 50; // Use MCTS after 50 games if sims > 0
+            const useMinimaxNow = useMinimax && useRandomOpponent && Math.random() < minimaxRatio;
+            const opponentType = useMinimaxNow ? 'minimax' : (hasSnapshot ? 'snapshot' : 'random');
             let examples;
             if (useRandomOpponent) {
                 // Alternate between playing as X and as O
                 const playAsX = g % 4 === 0 || g % 4 === 1;
                 examples = playAsX
-                    ? await playOneGameVsRandomAsX(model, temperature, hasSnapshot ? opponentModel : null, useMCTS, mctsSims)
-                    : await playOneGameVsRandomAsO(model, temperature, hasSnapshot ? opponentModel : null, useMCTS, mctsSims);
+                    ? await playOneGameVsRandomAsX(model, temperature, hasSnapshot ? opponentModel : null, useMCTS, mctsSims, opponentType)
+                    : await playOneGameVsRandomAsO(model, temperature, hasSnapshot ? opponentModel : null, useMCTS, mctsSims, opponentType);
             } else {
                 examples = await playOneGame(model, temperature, useMCTS, mctsSims);
             }
@@ -503,10 +509,7 @@ class MCTSNode {
 }
 
 function ucbScore(child, parentVisits, c_puct = 1.5) {
-    if (child.visitCount === 0) {
-        return Infinity; // encourage exploration of unvisited nodes
-    }
-    const q = -child.value; // negative because we alternate players
+    const q = child.visitCount === 0 ? 0 : -child.value; // negative because we alternate players
     const u = c_puct * child.prior * Math.sqrt(parentVisits) / (1 + child.visitCount);
     return q + u;
 }
@@ -557,6 +560,15 @@ async function mctsSearch(model, board, player, numSimulations = 50) {
         }
         
         if (!node.isExpanded) {
+            // Check if terminal before expanding
+            const term = isTerminal(node.board);
+            if (term.over) {
+                const reward = term.winner === null ? 0 : (term.winner === player ? 1 : -1);
+                node.isExpanded = true; // mark as expanded so we don't re-evaluate
+                backpropagate(node, reward);
+                continue;
+            }
+
             // Expansion + Evaluation
             const perspect = node.player === PLAYER_X ? node.board : invertBoard(node.board);
             const { policy: p, value: v } = await predict(model, perspect);
