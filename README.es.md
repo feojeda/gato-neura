@@ -1,4 +1,4 @@
-# Gato Neura
+# Gato Neura — Aprende Cómo Funcionan y Se Entrenan las Redes Neuronales
 
 <p align="center">
   <a href="README.md"><img src="https://img.shields.io/badge/lang-en-blue" alt="English"></a>
@@ -7,9 +7,9 @@
   <a href="README.ja.md"><img src="https://img.shields.io/badge/lang-ja-orange" alt="日本語"></a>
 </p>
 
-> **Una red neuronal estilo AlphaZero que aprende a jugar tic-tac-toe (gato) completamente en tu navegador.**
+> **Tutorial interactivo para aprender cómo funcionan y se entrenan las redes neuronales y los modelos de IA. Observa una red neuronal enseñarse a jugar tic-tac-toe en tu navegador — sin backend, sin nube, sin API keys.**
 
-Sin backend. Sin nube. Sin API keys. Solo tu navegador, TensorFlow.js, y una red neuronal diminuta que se enseña a jugar perfecto tic-tac-toe mediante autojuego y búsqueda en árbol de Monte Carlo.
+Este proyecto demuestra **aprendizaje por refuerzo con autojuego**, **Monte Carlo Tree Search (MCTS)** y **redes neuronales de doble cabeza** (policy + value) usando TensorFlow.js. Todo corre localmente en tu navegador. Puedes observar a la red aprender en tiempo real, inspeccionar sus pesos, visualizar su toma de decisiones, descargar modelos entrenados e incluso leer el código fuente exacto que se ejecuta.
 
 **Demo en vivo:** [https://feojeda.github.io/gato-neura/](https://feojeda.github.io/gato-neura/)
 
@@ -19,6 +19,7 @@ Sin backend. Sin nube. Sin API keys. Solo tu navegador, TensorFlow.js, y una red
 
 ## Tabla de Contenidos
 
+- [¿Para quién es esto?](#para-quién-es-esto)
 - [Qué es esto?](#qué-es-esto)
 - [Inicio Rápido](#inicio-rápido)
 - [Cómo Usar](#cómo-usar)
@@ -32,6 +33,16 @@ Sin backend. Sin nube. Sin API keys. Solo tu navegador, TensorFlow.js, y una red
 
 ---
 
+## ¿Para quién es esto?
+
+- **Estudiantes** que quieren aprender cómo funcionan las redes neuronales y cómo se entrenan los modelos de IA
+- **Desarrolladores** curiosos sobre aprendizaje por refuerzo, autojuego y MCTS
+- **Educadores** que buscan una demostración de machine learning basada en navegador
+- **Cualquiera** que quiera ver un modelo de IA entrenarse en tiempo real y entender qué pasa bajo el capó
+- **Principiantes** que quieren una introducción amigable a los algoritmos estilo AlphaZero sin instalar nada
+
+---
+
 ## Qué es esto?
 
 Gato Neura es una **implementación educativa autocontenida** de las ideas centrales de AlphaZero de DeepMind, escalada a tic-tac-toe para que corra completamente en un navegador web.
@@ -40,8 +51,9 @@ Demuestra:
 - **Redes neuronales de doble cabeza** (policy + value)
 - **Aprendizaje por refuerzo mediante autojuego**
 - **Monte Carlo Tree Search (MCTS)** para selección de movimientos
-- **Curriculum learning** (oponente aleatorio -> snapshot de sí misma)
+- **Curriculum learning** (oponente aleatorio → minimax perfecto → snapshot de sí misma)
 - **Visualización en tiempo real** de pesos, arquitectura y métricas de entrenamiento
+- **Guardar/cargar modelo** — descarga y comparte modelos entrenados como JSON
 
 Todo en ~2,000 líneas de JavaScript vanilla con **cero paso de build**. Abre DevTools y lee exactamente el código que corre.
 

@@ -1,6 +1,6 @@
-# Gato Neura Explicado — Para Lectores No Técnicos
+# Cómo Aprenden las Redes Neuronales: Guía Visual del Entrenamiento de IA
 
-> *No necesitas un título en matemáticas para entender como una red neuronal aprende a jugar gato.*
+> *No necesitas un título en matemáticas para entender cómo una red neuronal aprende a jugar tic-tac-toe. Esta guía explica cómo se entrenan los modelos de IA, qué ocurre durante el aprendizaje, y por qué el autojuego hace que las máquinas sean más inteligentes — usando lenguaje sencillo y analogías.*
 
 ---
 

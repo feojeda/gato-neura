@@ -1,6 +1,6 @@
-# Gato Neura Explained — For Non-Technical Readers
+# How Neural Networks Learn: A Visual Guide to AI Training
 
-> *You don't need a math degree to understand how a neural network learns to play Tic-Tac-Toe.*
+> *You don't need a math degree to understand how a neural network learns to play Tic-Tac-Toe. This guide explains how AI models are trained, what happens during learning, and why self-play makes machines smarter — using plain language and analogies.*
 
 ---
 

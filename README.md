@@ -1,4 +1,4 @@
-# Gato Neura
+# Gato Neura — Learn How Neural Networks & AI Models Are Trained
 
 <p align="center">
   <img src="https://img.shields.io/badge/lang-en-blue" alt="English">
@@ -7,9 +7,9 @@
   <a href="README.ja.md"><img src="https://img.shields.io/badge/lang-ja-orange" alt="日本語"></a>
 </p>
 
-> **An AlphaZero-style neural network that learns to play Tic-Tac-Toe entirely in your browser.**
+> **An interactive tutorial to learn how neural networks and AI models are trained. Watch a neural network teach itself Tic-Tac-Toe in your browser — no backend, no cloud, no API keys.**
 
-No backend. No cloud. No API keys. Just your browser, TensorFlow.js, and a tiny neural network teaching itself to play perfect Tic-Tac-Toe through self-play and Monte Carlo Tree Search.
+This project demonstrates **self-play reinforcement learning**, **Monte Carlo Tree Search (MCTS)**, and **dual-head neural networks** (policy + value) using TensorFlow.js. Everything runs locally in your browser. You can watch the network learn in real time, inspect its weights, visualize its decision-making, download trained models, and even read the exact source code that runs it.
 
 **Live Demo:** [https://feojeda.github.io/gato-neura/](https://feojeda.github.io/gato-neura/)
 
@@ -19,6 +19,7 @@ No backend. No cloud. No API keys. Just your browser, TensorFlow.js, and a tiny 
 
 ## Table of Contents
 
+- [Who is this for?](#who-is-this-for)
 - [What is this?](#what-is-this)
 - [Quick Start](#quick-start)
 - [How to Use](#how-to-use)
@@ -32,6 +33,16 @@ No backend. No cloud. No API keys. Just your browser, TensorFlow.js, and a tiny 
 
 ---
 
+## Who is this for?
+
+- **Students** learning how neural networks work and how AI models are trained
+- **Developers** curious about reinforcement learning, self-play, and MCTS
+- **Educators** looking for a browser-based machine learning demo
+- **Anyone** who wants to see an AI model train itself in real time and understand what happens under the hood
+- **Beginners** who want a gentle introduction to AlphaZero-style algorithms without installing anything
+
+---
+
 ## What is this?
 
 Gato Neura is a **self-contained, educational implementation** of the core ideas from DeepMind's AlphaZero, scaled down to Tic-Tac-Toe so it runs entirely in a web browser.
@@ -40,8 +51,9 @@ It demonstrates:
 - **Dual-head neural networks** (policy + value)
 - **Self-play reinforcement learning**
 - **Monte Carlo Tree Search (MCTS)** for move selection
-- **Curriculum learning** (random opponent → snapshot of itself)
+- **Curriculum learning** (random opponent → perfect minimax → snapshot of itself)
 - **Real-time visualization** of weights, architecture, and training metrics
+- **Model save/load** — download and share trained models as JSON
 
 All in ~2,000 lines of vanilla JavaScript with **zero build step**. Open DevTools and read the exact code that runs.
 
