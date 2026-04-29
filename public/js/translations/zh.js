@@ -39,6 +39,8 @@ export default {
         newGame: '新游戏',
         resetAll: '全部重置',
         resetModel: '重置模型',
+        downloadModel: '下载模型',
+        loadModel: '加载模型',
         player: '玩家',
         draws: '平局',
         network: '网络'
@@ -174,6 +176,7 @@ export default {
         details: '点击查看详情'
     },
     errors: {
-        couldNotVerifyArch: '无法验证模型架构，将创建新模型'
+        couldNotVerifyArch: '无法验证模型架构，将创建新模型',
+        cannotLoadWhileTraining: '训练进行中时无法加载模型。请先停止训练。'
     }
 };

@@ -39,6 +39,8 @@ export default {
         newGame: '新しいゲーム',
         resetAll: 'すべてリセット',
         resetModel: 'モデルをリセット',
+        downloadModel: 'モデルをダウンロード',
+        loadModel: 'モデルを読み込む',
         player: 'プレイヤー',
         draws: '引き分け',
         network: 'ネットワーク'
@@ -174,6 +176,7 @@ export default {
         details: '詳細を見る'
     },
     errors: {
-        couldNotVerifyArch: 'モデルアーキテクチャを確認できませんでした。新しいモデルを作成します'
+        couldNotVerifyArch: 'モデルアーキテクチャを確認できませんでした。新しいモデルを作成します',
+        cannotLoadWhileTraining: 'トレーニング中はモデルを読み込めません。先にトレーニングを停止してください。'
     }
 };

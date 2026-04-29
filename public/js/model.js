@@ -98,3 +98,61 @@ export function getParameterCount(hiddenLayers = [64, 32]) {
 export function disposeModel(model) {
     if (model) model.dispose();
 }
+
+/* ── Model export / import ─────────────────────────────────────── */
+
+export function exportModelWeights(model, metadata = {}) {
+    const layers = [];
+    for (const layer of model.layers) {
+        const w = layer.getWeights();
+        if (w.length === 0) continue;
+        layers.push({
+            name: layer.name,
+            shapes: w.map(t => t.shape),
+            data: w.map(t => Array.from(t.dataSync()))
+        });
+    }
+    return {
+        version: 1,
+        architecture: getModelInfo(model),
+        layers,
+        metadata: {
+            date: new Date().toISOString(),
+            ...metadata
+        }
+    };
+}
+
+export function importModelWeights(model, snapshot) {
+    if (!snapshot || !snapshot.layers) {
+        throw new Error('Invalid model snapshot');
+    }
+    const currentInfo = getModelInfo(model);
+    const savedInfo = snapshot.architecture || [];
+    const match = currentInfo.length === savedInfo.length &&
+        currentInfo.every((n, i) => n === savedInfo[i]);
+    if (!match) {
+        throw new Error(
+            `Architecture mismatch: current [${currentInfo.join(',')}] vs saved [${savedInfo.join(',')}]. Create a model with matching layers first.`
+        );
+    }
+
+    let layerIdx = 0;
+    for (const layer of model.layers) {
+        const w = layer.getWeights();
+        if (w.length === 0) continue;
+
+        const saved = snapshot.layers.find(l => l.name === layer.name);
+        if (!saved) {
+            throw new Error(`Layer "${layer.name}" not found in snapshot`);
+        }
+        if (saved.shapes.length !== w.length) {
+            throw new Error(`Layer "${layer.name}" weight count mismatch`);
+        }
+
+        const newWeights = saved.data.map((flat, i) => {
+            return tf.tensor(flat, saved.shapes[i]);
+        });
+        layer.setWeights(newWeights);
+    }
+}

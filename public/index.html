@@ -70,6 +70,9 @@
                 <button id="btn-new-game" data-i18n="board.newGame">New Game</button>
                 <button id="btn-reset" data-i18n="board.resetAll">Reset All</button>
                 <button id="btn-reset-model" data-i18n="board.resetModel">Reset Model</button>
+                <button id="btn-download-model" data-i18n="board.downloadModel">Download Model</button>
+                <button id="btn-load-model" data-i18n="board.loadModel">Load Model</button>
+                <input type="file" id="input-load-model" accept=".json" hidden>
             </div>
             <div class="scoreboard" id="scoreboard">
                 <span class="score score-player"><span data-i18n="board.player">Player</span>: <strong id="score-player">0</strong></span>
@@ -145,6 +148,6 @@
             <div class="modal-body" id="info-modal-body"></div>
         </div>
     </div>
-    <script type="module" src="js/app.js?v=5"></script>
+    <script type="module" src="js/app.js?v=6"></script>
 </body>
 </html>

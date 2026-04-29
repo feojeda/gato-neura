@@ -39,6 +39,8 @@ export default {
         newGame: 'New Game',
         resetAll: 'Reset All',
         resetModel: 'Reset Model',
+        downloadModel: 'Download Model',
+        loadModel: 'Load Model',
         player: 'Player',
         draws: 'Draws',
         network: 'Network'
@@ -174,6 +176,7 @@ export default {
         details: 'Click for details'
     },
     errors: {
-        couldNotVerifyArch: 'Could not verify model architecture, a new one will be created'
+        couldNotVerifyArch: 'Could not verify model architecture, a new one will be created',
+        cannotLoadWhileTraining: 'Cannot load a model while training is in progress. Please stop training first.'
     }
 };

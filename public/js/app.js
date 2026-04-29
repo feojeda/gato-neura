@@ -67,6 +67,15 @@ function setupUI() {
     document.getElementById('btn-reset').addEventListener('click', resetAll);
     document.getElementById('btn-reset-model').addEventListener('click', resetModel);
 
+    // Model download / load
+    document.getElementById('btn-download-model').addEventListener('click', downloadModel);
+    const loadBtn = document.getElementById('btn-load-model');
+    const loadInput = document.getElementById('input-load-model');
+    if (loadBtn && loadInput) {
+        loadBtn.addEventListener('click', () => loadInput.click());
+        loadInput.addEventListener('change', loadModelFile);
+    }
+
     // Language selector
     const langSelect = document.getElementById('lang-select');
     if (langSelect) {
@@ -497,6 +506,90 @@ async function startTraining() {
 
 function stopTraining() {
     state.shouldStop = true;
+}
+
+function downloadModel() {
+    if (!state.model) return;
+    const snapshot = model.exportModelWeights(state.model, {
+        trainedGames: state.totalTrainedGames,
+        wins: state.totalWins,
+        losses: state.totalLosses,
+        draws: state.totalDraws
+    });
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `gato-neura-${snapshot.architecture.join('-')}-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log('Model downloaded:', snapshot.metadata);
+}
+
+function loadModelFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const snapshot = JSON.parse(e.target.result);
+            if (state.isTraining) {
+                alert(i18n.t('errors.cannotLoadWhileTraining'));
+                return;
+            }
+            // Check architecture match and recreate model if needed
+            const currentLayers = ui.getLayersConfig();
+            const savedArch = snapshot.architecture || [];
+            const hiddenArch = savedArch.slice(1, -2); // remove input, policy, value
+            const match = currentLayers.length === hiddenArch.length &&
+                currentLayers.every((n, i) => n === hiddenArch[i]);
+
+            if (!match) {
+                // Auto-adjust UI to match loaded architecture
+                if (confirm(`Architecture mismatch. Current: [${currentLayers.join(',')}], File: [${hiddenArch.join(',')}]. Adjust layers to match?`)) {
+                    const container = document.getElementById('layers-config');
+                    container.innerHTML = '';
+                    hiddenArch.forEach((neurons, i) => {
+                        const row = document.createElement('div');
+                        row.className = 'layer-row';
+                        row.innerHTML = `
+                            <label>Capa ${i + 1}:</label>
+                            <input type="number" min="1" max="128" value="${neurons}" data-layer="${i}">
+                            <button class="btn-remove-layer" data-layer="${i}">×</button>
+                        `;
+                        container.appendChild(row);
+                    });
+                    refreshVisualization();
+                } else {
+                    return;
+                }
+            }
+
+            model.importModelWeights(state.model, snapshot);
+            state.totalTrainedGames = snapshot.metadata?.trainedGames || 0;
+            state.totalWins = snapshot.metadata?.wins || 0;
+            state.totalLosses = snapshot.metadata?.losses || 0;
+            state.totalDraws = snapshot.metadata?.draws || 0;
+            state.replayBuffer = null; // clear old buffer to avoid mixing
+
+            viz.updateVisualization(
+                document.getElementById('model-viz'),
+                document.getElementById('heatmap-container'),
+                state.model
+            );
+            console.log('Model loaded from file:', snapshot.metadata);
+            newGame();
+        } catch (err) {
+            console.error('Failed to load model:', err);
+            alert('Failed to load model: ' + err.message);
+        } finally {
+            event.target.value = ''; // allow re-selecting same file
+        }
+    };
+    reader.readAsText(file);
 }
 
 init();

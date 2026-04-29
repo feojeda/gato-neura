@@ -39,6 +39,8 @@ export default {
         newGame: 'Nueva Partida',
         resetAll: 'Reiniciar Todo',
         resetModel: 'Reset Modelo',
+        downloadModel: 'Descargar Modelo',
+        loadModel: 'Cargar Modelo',
         player: 'Jugador',
         draws: 'Empates',
         network: 'Red'
@@ -174,6 +176,7 @@ export default {
         details: 'Click para ver detalles'
     },
     errors: {
-        couldNotVerifyArch: 'No se pudo verificar arquitectura del modelo, se creará uno nuevo'
+        couldNotVerifyArch: 'No se pudo verificar arquitectura del modelo, se creará uno nuevo',
+        cannotLoadWhileTraining: 'No se puede cargar un modelo mientras el entrenamiento está en curso. Detén el entrenamiento primero.'
     }
 };
