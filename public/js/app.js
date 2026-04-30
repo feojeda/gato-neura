@@ -3,7 +3,9 @@ import * as model from './model.js';
 import * as trainer from './trainer.js';
 import { ReplayBuffer } from './trainer.js';
 import * as viz from './visualizer.js';
+import { updateDynamicVisualization } from './visualizer.js';
 import * as ui from './ui.js';
+import { getVisualizationMode } from './ui.js';
 import { WIN_LINES } from './game.js';
 import * as i18n from './i18n.js';
 import en from './translations/en.js';
@@ -59,6 +61,28 @@ function setupUI() {
     ui.initMctsSlider();
     ui.initInferenceTempSlider();
     ui.initMetricInfoButtons();
+    ui.initModeToggle();
+
+    document.addEventListener('visualization:modeChange', (e) => {
+        const { mode } = e.detail;
+
+        if (mode === 'dynamic' && state.model) {
+            const modelViz = document.getElementById('model-viz');
+            if (modelViz) {
+                const boardForNetwork = state.networkIsX ? state.board : game.invertBoard(state.board);
+                model.predict(state.model, boardForNetwork).then(({ policy, value }) => {
+                    updateDynamicVisualization(modelViz, state.board, { policy, value });
+                });
+            }
+        } else if (mode === 'static') {
+            const modelViz = document.getElementById('model-viz');
+            const heatmapContainer = document.getElementById('heatmap-container');
+            if (modelViz && state.model) {
+                viz.updateVisualization(modelViz, heatmapContainer, state.model, { mode: 'static' });
+            }
+        }
+    });
+
     ui.initBoard(handleCellClick);
 
     document.getElementById('btn-train').addEventListener('click', startTraining);
@@ -311,6 +335,14 @@ async function makeNetworkMove() {
         }
 
         const { policy, value: rawValue } = await model.predict(currentModel, boardForNetwork);
+
+        if (getVisualizationMode() === 'dynamic') {
+            const modelViz = document.getElementById('model-viz');
+            if (modelViz) {
+                updateDynamicVisualization(modelViz, state.board, { policy, value: rawValue });
+            }
+        }
+
         showPolicyHeatmap(policy);
 
         const { move } = await trainer.chooseBestMove(currentModel, boardForNetwork, temperature);
