@@ -118,7 +118,8 @@ async function playOneGame(model, temperature, useMCTS = false, mctsSims = 50) {
         examples.push({
             board: [...perspectBoard],
             policy: [...targetPolicy],
-            player: currentPlayer
+            player: currentPlayer,
+            mctsValue: useMCTS ? rawValue : null
         });
 
         const move = sampleMove(targetPolicy, temperature);
@@ -130,7 +131,7 @@ async function playOneGame(model, temperature, useMCTS = false, mctsSims = 50) {
             return examples.map(ex => ({
                 input: ex.board,
                 policy: ex.policy,
-                value: ex.player === PLAYER_X ? reward : -reward
+                value: ex.mctsValue !== null ? ex.mctsValue : (ex.player === PLAYER_X ? reward : -reward)
             }));
         }
         currentPlayer = currentPlayer === PLAYER_X ? PLAYER_O : PLAYER_X;
@@ -166,13 +167,15 @@ async function playOneGameVsRandomAsX(model, temperature, opponentModel = null, 
 
     while (true) {
         // Red's turn (always X)
-        let targetPolicy;
+        let targetPolicy, targetValue;
         if (useMCTS) {
             const mctsResult = await mctsSearch(model, board, PLAYER_X, mctsSims);
             targetPolicy = mctsResult.policy;
+            targetValue = mctsResult.value;
         } else {
-            const { policy } = await predict(model, board);
+            const { policy, value } = await predict(model, board);
             targetPolicy = maskInvalidMoves(policy, board);
+            targetValue = null;
         }
 
         // Force immediate win or block if available
@@ -184,7 +187,8 @@ async function playOneGameVsRandomAsX(model, temperature, opponentModel = null, 
 
         examples.push({
             board: [...board],
-            policy: finalPolicy
+            policy: finalPolicy,
+            mctsValue: targetValue
         });
 
         const move = forcedWin !== null ? forcedWin
@@ -197,7 +201,7 @@ async function playOneGameVsRandomAsX(model, temperature, opponentModel = null, 
             return examples.map(ex => ({
                 input: ex.board,
                 policy: ex.policy,
-                value: reward
+                value: ex.mctsValue !== null ? ex.mctsValue : reward
             }));
         }
 
@@ -257,13 +261,15 @@ async function playOneGameVsRandomAsO(model, temperature, opponentModel = null, 
 
         // Red's turn (plays as O): invert board so Red sees itself as +1
         const perspectBoard = invertBoard(board);
-        let targetPolicy;
+        let targetPolicy, targetValue;
         if (useMCTS) {
             const mctsResult = await mctsSearch(model, board, PLAYER_O, mctsSims);
             targetPolicy = mctsResult.policy;
+            targetValue = mctsResult.value;
         } else {
-            const { policy } = await predict(model, perspectBoard);
+            const { policy, value } = await predict(model, perspectBoard);
             targetPolicy = maskInvalidMoves(policy, perspectBoard);
+            targetValue = null;
         }
 
         // Force immediate win or block if available
@@ -275,7 +281,8 @@ async function playOneGameVsRandomAsO(model, temperature, opponentModel = null, 
 
         examples.push({
             board: [...perspectBoard],
-            policy: finalPolicy
+            policy: finalPolicy,
+            mctsValue: targetValue
         });
 
         const move = forcedWin !== null ? forcedWin
@@ -288,7 +295,7 @@ async function playOneGameVsRandomAsO(model, temperature, opponentModel = null, 
             return examples.map(ex => ({
                 input: ex.board,
                 policy: ex.policy,
-                value: reward
+                value: ex.mctsValue !== null ? ex.mctsValue : reward
             }));
         }
     }
