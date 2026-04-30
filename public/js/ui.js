@@ -1,4 +1,7 @@
 import * as i18n from './i18n.js';
+import { updateVisualization } from './visualizer.js';
+
+let visualizationMode = 'static';
 
 export function initBoard(onCellClick) {
     const cells = document.querySelectorAll('.cell');
@@ -367,6 +370,50 @@ export function initInferenceTempSlider() {
     slider.addEventListener('input', () => {
         display.textContent = parseFloat(slider.value).toFixed(1);
     });
+}
+
+export function initModeToggle() {
+    const toggle = document.getElementById('mode-toggle');
+    const staticLabel = document.querySelector('.mode-label:first-child');
+    const dynamicLabel = document.querySelector('.mode-label:last-child');
+
+    if (!toggle) return;
+
+    toggle.addEventListener('click', () => {
+        visualizationMode = visualizationMode === 'static' ? 'dynamic' : 'static';
+
+        if (visualizationMode === 'dynamic') {
+            toggle.classList.add('active');
+            staticLabel.classList.remove('active');
+            dynamicLabel.classList.add('active');
+        } else {
+            toggle.classList.remove('active');
+            staticLabel.classList.add('active');
+            dynamicLabel.classList.remove('active');
+        }
+
+        document.dispatchEvent(new CustomEvent('visualization:modeChange', {
+            detail: { mode: visualizationMode }
+        }));
+
+        const modelViz = document.getElementById('model-viz');
+        const heatmapContainer = document.getElementById('heatmap-container');
+        if (modelViz && window.currentModel) {
+            updateVisualization(modelViz, heatmapContainer, window.currentModel, {
+                mode: visualizationMode
+            });
+        }
+    });
+
+    if (staticLabel) staticLabel.classList.add('active');
+}
+
+export function getVisualizationMode() {
+    return visualizationMode;
+}
+
+export function setVisualizationMode(mode) {
+    visualizationMode = mode;
 }
 
 export function getInferenceTemperature() {

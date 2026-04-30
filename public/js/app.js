@@ -59,6 +59,7 @@ function setupUI() {
     ui.initMctsSlider();
     ui.initInferenceTempSlider();
     ui.initMetricInfoButtons();
+    ui.initModeToggle();
     ui.initBoard(handleCellClick);
 
     document.getElementById('btn-train').addEventListener('click', startTraining);
