@@ -136,6 +136,9 @@ function setupUI() {
         });
     }
 
+    // Arena UI
+    setupArenaUI();
+
     // About modal
     const aboutModal = document.getElementById('about-modal');
     const btnAbout = document.getElementById('btn-about');
@@ -648,6 +651,139 @@ function loadModelFile(event) {
         }
     };
     reader.readAsText(file);
+}
+
+/* ── Model Arena ─────────────────────────────────────────────── */
+
+function setupArenaUI() {
+    const modeSelect = document.getElementById('arena-mode');
+    const uploadA = document.getElementById('arena-upload-a');
+    const uploadB = document.getElementById('arena-upload-b');
+    const btnStart = document.getElementById('btn-arena-start');
+
+    if (!modeSelect || !btnStart) return;
+
+    function updateVisibility() {
+        const mode = modeSelect.value;
+        uploadA.classList.toggle('hidden', mode === 'current-vs-random');
+        uploadB.classList.toggle('hidden', mode !== 'upload-vs-upload');
+    }
+
+    modeSelect.addEventListener('change', updateVisibility);
+    updateVisibility();
+
+    btnStart.addEventListener('click', runArenaBattle);
+}
+
+async function loadSnapshotFromFile(input) {
+    const file = input.files[0];
+    if (!file) throw new Error('No file selected');
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                resolve(JSON.parse(e.target.result));
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+    });
+}
+
+function createModelFromSnapshot(snapshot) {
+    const arch = snapshot.architecture || [];
+    const hidden = arch.slice(1, -2);
+    if (hidden.length === 0) throw new Error('Invalid architecture in snapshot');
+    const m = model.createModel(hidden);
+    model.importModelWeights(m, snapshot);
+    return m;
+}
+
+async function runArenaBattle() {
+    const mode = document.getElementById('arena-mode').value;
+    const numGames = parseInt(document.getElementById('arena-games').value, 10) || 100;
+    const resultsEl = document.getElementById('arena-results');
+    const progressEl = document.getElementById('arena-progress');
+    const btnStart = document.getElementById('btn-arena-start');
+
+    if (state.isTraining) {
+        alert(i18n.t('errors.cannotLoadWhileTraining'));
+        return;
+    }
+
+    btnStart.disabled = true;
+    btnStart.textContent = i18n.t('arena.battleInProgress');
+    resultsEl.classList.remove('hidden');
+    progressEl.style.width = '0%';
+
+    let modelA = null;
+    let modelB = null;
+    let labelA = 'A';
+    let labelB = 'B';
+
+    try {
+        if (mode === 'current-vs-random') {
+            modelA = state.model;
+            labelA = 'Current';
+            labelB = 'Random';
+            const result = await trainer.evaluateVsRandom(modelA, numGames, (data) => {
+                updateArenaUI(data.gamesPlayed, numGames, data.wins, data.draws, data.losses, 'Current', 'Random');
+            });
+            updateArenaUI(numGames, numGames, result.wins, result.draws, result.losses, 'Current', 'Random');
+        } else if (mode === 'upload-vs-random') {
+            const snapA = await loadSnapshotFromFile(document.getElementById('arena-file-a'));
+            modelA = createModelFromSnapshot(snapA);
+            labelA = 'Uploaded';
+            labelB = 'Random';
+            const result = await trainer.evaluateVsRandom(modelA, numGames, (data) => {
+                updateArenaUI(data.gamesPlayed, numGames, data.wins, data.draws, data.losses, labelA, labelB);
+            });
+            updateArenaUI(numGames, numGames, result.wins, result.draws, result.losses, labelA, labelB);
+            modelA.dispose();
+        } else if (mode === 'upload-vs-current') {
+            const snapA = await loadSnapshotFromFile(document.getElementById('arena-file-a'));
+            modelA = createModelFromSnapshot(snapA);
+            modelB = state.model;
+            labelA = 'Uploaded';
+            labelB = 'Current';
+            const result = await trainer.evaluateModelVsModel(modelA, modelB, numGames, (data) => {
+                updateArenaUI(data.gamesPlayed, numGames, data.winsA, data.draws, data.winsB, labelA, labelB);
+            });
+            updateArenaUI(numGames, numGames, result.winsA, result.draws, result.winsB, labelA, labelB);
+            modelA.dispose();
+        } else if (mode === 'upload-vs-upload') {
+            const snapA = await loadSnapshotFromFile(document.getElementById('arena-file-a'));
+            const snapB = await loadSnapshotFromFile(document.getElementById('arena-file-b'));
+            modelA = createModelFromSnapshot(snapA);
+            modelB = createModelFromSnapshot(snapB);
+            labelA = 'Uploaded A';
+            labelB = 'Uploaded B';
+            const result = await trainer.evaluateModelVsModel(modelA, modelB, numGames, (data) => {
+                updateArenaUI(data.gamesPlayed, numGames, data.winsA, data.draws, data.winsB, labelA, labelB);
+            });
+            updateArenaUI(numGames, numGames, result.winsA, result.draws, result.winsB, labelA, labelB);
+            modelA.dispose();
+            modelB.dispose();
+        }
+    } catch (err) {
+        console.error('Arena battle error:', err);
+        alert('Arena error: ' + err.message);
+    } finally {
+        btnStart.disabled = false;
+        btnStart.textContent = i18n.t('arena.start');
+    }
+}
+
+function updateArenaUI(played, total, winsA, draws, winsB, labelA, labelB) {
+    document.getElementById('arena-wins-a').textContent = winsA;
+    document.getElementById('arena-draws').textContent = draws;
+    document.getElementById('arena-wins-b').textContent = winsB;
+    const winRate = total > 0 ? ((winsA / total) * 100).toFixed(1) : '0.0';
+    document.getElementById('arena-winrate').textContent = winRate + '%';
+    const progress = total > 0 ? (played / total) * 100 : 0;
+    document.getElementById('arena-progress').style.width = progress + '%';
 }
 
 init();

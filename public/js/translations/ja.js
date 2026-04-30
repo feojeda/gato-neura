@@ -10,7 +10,8 @@ export default {
     panel: {
         model: 'モデル',
         board: '盤面',
-        controls: 'コントロール'
+        controls: 'コントロール',
+        arena: 'モデルアリーナ'
     },
     model: {
         params: 'パラメータ: —',
@@ -181,6 +182,24 @@ export default {
         <p>ニューラルネットワークは、モンテカルロ木探索（MCTS）によって導かれながら、自分自身と完璧なミニマックス対戦相手と数千回対戦して三目並べを学習します。リアルタイムで学習を見たり、内部の重みを検査したり、訓練されたモデルをダウンロードして共有したり、後で訓練を続けたりすることができます。</p>
         <p>好奇心とコーヒーで <a href="https://github.com/feojeda" target="_blank" rel="noopener">feojeda</a> によって構築されました。</p>
         <p><a href="https://github.com/feojeda/gato-neura" target="_blank" rel="noopener" class="github-link">GitHub でソースコードを見る →</a></p>`
+    },
+    arena: {
+        mode: 'モード:',
+        currentVsRandom: '現在のモデル vs ランダム',
+        uploadVsRandom: '読み込んだモデル vs ランダム',
+        uploadVsCurrent: '読み込んだモデル vs 現在',
+        uploadVsUpload: '読み込んだモデル A vs 読み込んだモデル B',
+        modelA: 'モデル A',
+        modelB: 'モデル B',
+        games: 'ゲーム数:',
+        start: '対戦開始',
+        results: '結果',
+        winsA: 'A の勝利:',
+        draws: '引き分け:',
+        winsB: 'B の勝利:',
+        winRateA: 'A の勝率:',
+        ready: '準備完了',
+        battleInProgress: '対戦中...'
     },
     tooltip: {
         details: '詳細を見る'

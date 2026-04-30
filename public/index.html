@@ -163,6 +163,43 @@
                 </div>
             </div>
         </section>
+        <section class="panel panel-arena" id="panel-arena">
+            <h2 data-i18n="panel.arena">Model Arena</h2>
+            <div class="arena-config">
+                <label><span data-i18n="arena.mode">Mode:</span>
+                    <select id="arena-mode">
+                        <option value="current-vs-random" data-i18n="arena.currentVsRandom">Current model vs Random</option>
+                        <option value="upload-vs-random" data-i18n="arena.uploadVsRandom">Uploaded model vs Random</option>
+                        <option value="upload-vs-current" data-i18n="arena.uploadVsCurrent">Uploaded model vs Current</option>
+                        <option value="upload-vs-upload" data-i18n="arena.uploadVsUpload">Uploaded model A vs Uploaded model B</option>
+                    </select>
+                </label>
+                <div id="arena-upload-a" class="arena-upload-row">
+                    <label><span data-i18n="arena.modelA">Model A:</span> <input type="file" id="arena-file-a" accept=".json"></label>
+                </div>
+                <div id="arena-upload-b" class="arena-upload-row hidden">
+                    <label><span data-i18n="arena.modelB">Model B:</span> <input type="file" id="arena-file-b" accept=".json"></label>
+                </div>
+                <label><span data-i18n="arena.games">Games:</span> <input type="number" id="arena-games" value="100" min="10" max="1000" step="10"></label>
+                <button id="btn-arena-start" class="btn-primary" data-i18n="arena.start">Start Battle</button>
+            </div>
+            <div class="arena-results hidden" id="arena-results">
+                <h3 data-i18n="arena.results">Results</h3>
+                <div class="arena-result-row">
+                    <span class="arena-label" data-i18n="arena.winsA">Wins A:</span> <strong id="arena-wins-a">0</strong>
+                </div>
+                <div class="arena-result-row">
+                    <span class="arena-label" data-i18n="arena.draws">Draws:</span> <strong id="arena-draws">0</strong>
+                </div>
+                <div class="arena-result-row">
+                    <span class="arena-label" data-i18n="arena.winsB">Wins B:</span> <strong id="arena-wins-b">0</strong>
+                </div>
+                <div class="arena-result-row">
+                    <span class="arena-label" data-i18n="arena.winRateA">Win Rate A:</span> <strong id="arena-winrate">0%</strong>
+                </div>
+                <div class="arena-progress"><div class="arena-progress-fill" id="arena-progress"></div></div>
+            </div>
+        </section>
     </main>
     <!-- Metric Detail Modal -->
     <div id="metric-modal" class="modal hidden">
@@ -187,6 +224,6 @@
             <div class="modal-body" id="info-modal-body"></div>
         </div>
     </div>
-    <script type="module" src="js/app.js?v=7"></script>
+    <script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>

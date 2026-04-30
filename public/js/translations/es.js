@@ -10,7 +10,8 @@ export default {
     panel: {
         model: 'Modelo',
         board: 'Tablero',
-        controls: 'Controles'
+        controls: 'Controles',
+        arena: 'Arena de Modelos'
     },
     model: {
         params: 'Parámetros: —',
@@ -181,6 +182,24 @@ export default {
         <p>La red neuronal aprende a jugar Tic-Tac-Toe jugando miles de partidas contra sí misma y contra un oponente minimax perfecto, guiada por Monte Carlo Tree Search (MCTS). Puedes verla aprender en tiempo real, inspeccionar sus pesos internos, e incluso descargar el modelo entrenado para compartirlo o continuar entrenando después.</p>
         <p>Construido con curiosidad y café por <a href="https://github.com/feojeda" target="_blank" rel="noopener">feojeda</a>.</p>
         <p><a href="https://github.com/feojeda/gato-neura" target="_blank" rel="noopener" class="github-link">Ver código en GitHub →</a></p>`
+    },
+    arena: {
+        mode: 'Modo:',
+        currentVsRandom: 'Modelo actual vs Aleatorio',
+        uploadVsRandom: 'Modelo cargado vs Aleatorio',
+        uploadVsCurrent: 'Modelo cargado vs Actual',
+        uploadVsUpload: 'Modelo cargado A vs Modelo cargado B',
+        modelA: 'Modelo A',
+        modelB: 'Modelo B',
+        games: 'Partidas:',
+        start: 'Iniciar Batalla',
+        results: 'Resultados',
+        winsA: 'Victorias A:',
+        draws: 'Empates:',
+        winsB: 'Victorias B:',
+        winRateA: 'Tasa de victoria A:',
+        ready: 'Listo',
+        battleInProgress: 'Batalla en progreso...'
     },
     tooltip: {
         details: 'Click para ver detalles'

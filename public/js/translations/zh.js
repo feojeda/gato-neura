@@ -10,7 +10,8 @@ export default {
     panel: {
         model: '模型',
         board: '棋盘',
-        controls: '控制'
+        controls: '控制',
+        arena: '模型竞技场'
     },
     model: {
         params: '参数: —',
@@ -181,6 +182,24 @@ export default {
         <p>神经网络通过与自身和完美的极小极大对手进行数千场对局来学习井字棋，由蒙特卡洛树搜索（MCTS）引导。你可以实时观看它学习，检查其内部权重，甚至下载训练好的模型以分享或稍后继续训练。</p>
         <p>由 <a href="https://github.com/feojeda" target="_blank" rel="noopener">feojeda</a> 用好奇心和咖啡构建。</p>
         <p><a href="https://github.com/feojeda/gato-neura" target="_blank" rel="noopener" class="github-link">在 GitHub 上查看源代码 →</a></p>`
+    },
+    arena: {
+        mode: '模式:',
+        currentVsRandom: '当前模型 vs 随机',
+        uploadVsRandom: '上传模型 vs 随机',
+        uploadVsCurrent: '上传模型 vs 当前',
+        uploadVsUpload: '上传模型 A vs 上传模型 B',
+        modelA: '模型 A',
+        modelB: '模型 B',
+        games: '局数:',
+        start: '开始对战',
+        results: '结果',
+        winsA: 'A 胜:',
+        draws: '平局:',
+        winsB: 'B 胜:',
+        winRateA: 'A 胜率:',
+        ready: '就绪',
+        battleInProgress: '对战中...'
     },
     tooltip: {
         details: '点击查看详情'

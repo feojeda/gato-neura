@@ -617,7 +617,7 @@ function backpropagate(node, value) {
 
 /* ── Model evaluation vs random ──────────────────────────────── */
 
-export async function evaluateVsRandom(model, numGames = 100) {
+export async function evaluateVsRandom(model, numGames = 100, onProgress = null) {
     let wins = 0;
     let losses = 0;
     let draws = 0;
@@ -670,8 +670,50 @@ export async function evaluateVsRandom(model, numGames = 100) {
                 }
             }
         }
+        if (onProgress) onProgress({ gamesPlayed: g + 1, totalGames: numGames, wins, losses, draws });
     }
     return { wins, losses, draws, winRate: wins / numGames };
+}
+
+/* ── Model Arena: evaluate two models against each other ──────── */
+
+async function playOneGameModelVsModel(modelA, modelB, aIsX) {
+    let board = createBoard();
+    let currentPlayer = PLAYER_X;
+
+    while (true) {
+        const model = (currentPlayer === PLAYER_X) === aIsX ? modelA : modelB;
+        const perspectBoard = currentPlayer === PLAYER_X ? board : invertBoard(board);
+        const { move } = await chooseBestMove(model, perspectBoard, 0);
+        board = makeMove(board, move, currentPlayer);
+
+        const term = isTerminal(board);
+        if (term.over) {
+            if (term.winner === null) return 0; // draw
+            const winnerIsA = (term.winner === PLAYER_X) === aIsX;
+            return winnerIsA ? 1 : -1;
+        }
+        currentPlayer = currentPlayer === PLAYER_X ? PLAYER_O : PLAYER_X;
+    }
+}
+
+export async function evaluateModelVsModel(modelA, modelB, numGames = 100, onProgress = null) {
+    let winsA = 0;
+    let winsB = 0;
+    let draws = 0;
+
+    for (let g = 0; g < numGames; g++) {
+        const aIsX = g % 2 === 0;
+        const result = await playOneGameModelVsModel(modelA, modelB, aIsX);
+        if (result === 1) winsA++;
+        else if (result === -1) winsB++;
+        else draws++;
+
+        if (onProgress) onProgress({ gamesPlayed: g + 1, totalGames: numGames, winsA, winsB, draws });
+        await tf.nextFrame();
+    }
+
+    return { winsA, winsB, draws, winRateA: winsA / numGames };
 }
 
 /* ── Inference helper ──────────────────────────────────────────── */
